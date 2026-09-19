@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.location import AdministrativeArea
+from app.models.administrative_area import AdministrativeArea
 
 
 class LocationRepository:
