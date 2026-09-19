@@ -1,7 +1,8 @@
+from app.core.config import settings
 from fastapi import HTTPException
 
 from app.schemas.listing import ListingImageUpdate
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -363,8 +364,11 @@ async def confirm_image_upload(
         for existing in listing.images:
             existing.is_primary = False
 
+    image_id = uuid4()
     image = ListingImage(
+        id=image_id,
         listing_id=listing.id,
+        image_url=f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/images/{image_id}",
         object_key=payload.object_key,
         mime_type=payload.content_type,
         file_size=payload.size_bytes,

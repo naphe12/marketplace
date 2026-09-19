@@ -147,6 +147,10 @@ class ListingImage(UUIDMixin, Base):
         index=True,
     )
 
+    image_url: Mapped[str] = mapped_column(Text, nullable=False)
+
+    thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     object_key: Mapped[str] = mapped_column(
         String(500),
         nullable=False,
