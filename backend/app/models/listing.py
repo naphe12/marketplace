@@ -176,6 +176,10 @@ class ListingImage(UUIDMixin, TimestampMixin, Base):
     )
 
 
+    listing: Mapped["Listing"] = relationship(
+        back_populates="images",
+    )
+
 class ListingAttributeValue(UUIDMixin, Base):
     __tablename__ = "listing_attribute_values"
 
