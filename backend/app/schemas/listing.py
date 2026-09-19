@@ -54,7 +54,7 @@ class ListingUpdate(BaseModel):
     description: str | None = None
     price: Decimal | None = Field(default=None, ge=0)
 
-    currency: str | None = None
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
     price_type: str | None = None
     condition: str | None = None
 
@@ -74,8 +74,13 @@ class ListingImageCreate(BaseModel):
     image_url: str | None = None
     thumbnail_url: str | None = None
 
-    position: int = 0
+    position: int = Field(default=0, ge=0)
     is_primary: bool = False
+
+
+class ListingImageUpdate(BaseModel):
+    position: int | None = Field(default=None, ge=0)
+    is_primary: bool | None = None
 
 
 class ListingImageResponse(BaseModel):

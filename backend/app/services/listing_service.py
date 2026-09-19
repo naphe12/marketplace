@@ -1,3 +1,4 @@
+from app.schemas.listing import ListingImageUpdate
 from app.core.config import settings
 from app.services.storage_service import StorageService
 from uuid import UUID, uuid4
@@ -90,7 +91,7 @@ class ListingService:
             listing_id,
         )
 
-        if not listing:
+        if not listing or listing.deleted_at is not None:
             raise HTTPException(
                 status_code=404,
                 detail="Annonce introuvable.",
@@ -119,6 +120,7 @@ class ListingService:
         )
 
         if listing.status not in {
+            "ACTIVE",
             "DRAFT",
             "EXPIRED",
             "REJECTED",
@@ -131,6 +133,16 @@ class ListingService:
         values = data.model_dump(
             exclude_unset=True
         )
+
+        required_fields = {
+            "category_id", "title", "currency", "price_type", "quantity", "allow_offers",
+        }
+        if any(key in required_fields and value is None for key, value in values.items()):
+            raise HTTPException(422, "Un champ obligatoire ne peut pas être nul.")
+        if "title" in values:
+            values["title"] = values["title"].strip()
+            if len(values["title"]) < 3:
+                raise HTTPException(422, "Le titre doit contenir au moins 3 caractères.")
 
         if "category_id" in values:
             category = await CategoryRepository.get_by_id(
@@ -174,6 +186,8 @@ class ListingService:
             listing_id,
             seller_id,
         )
+
+        ListingService.ensure_images_editable(listing)
 
         image_id = uuid4()
         image_url = data.image_url
@@ -311,3 +325,46 @@ class ListingService:
             "listing_id": listing.id,
             "status": "PENDING_PAYMENT",
         }
+    @staticmethod
+    def ensure_images_editable(listing: Listing):
+        if listing.status not in {"DRAFT", "ACTIVE", "EXPIRED", "REJECTED"}:
+            raise HTTPException(400, "Les photos de cette annonce ne peuvent pas être modifiées actuellement.")
+
+    @staticmethod
+    async def update_image(
+        db: AsyncSession, listing_id: UUID, image_id: UUID,
+        seller_id: UUID, data: ListingImageUpdate,
+    ) -> ListingImage:
+        listing = await ListingService.get_owned(db, listing_id, seller_id)
+        ListingService.ensure_images_editable(listing)
+        image = next((item for item in listing.images if item.id == image_id), None)
+        if image is None:
+            raise HTTPException(404, "Photo introuvable dans cette annonce.")
+        values = data.model_dump(exclude_unset=True)
+        if any(value is None for value in values.values()):
+            raise HTTPException(422, "La position et le statut principal ne peuvent pas être nuls.")
+        if values.get("is_primary"):
+            for item in listing.images:
+                item.is_primary = False
+        for key, value in values.items():
+            setattr(image, key, value)
+        await db.commit()
+        await db.refresh(image)
+        return image
+
+    @staticmethod
+    async def delete_image(
+        db: AsyncSession, listing_id: UUID, image_id: UUID, seller_id: UUID,
+    ):
+        listing = await ListingService.get_owned(db, listing_id, seller_id)
+        ListingService.ensure_images_editable(listing)
+        image = next((item for item in listing.images if item.id == image_id), None)
+        if image is None:
+            raise HTTPException(404, "Photo introuvable dans cette annonce.")
+        remaining = [item for item in listing.images if item.id != image_id]
+        if image.is_primary and remaining:
+            for item in remaining:
+                item.is_primary = False
+            min(remaining, key=lambda item: item.position).is_primary = True
+        await db.delete(image)
+        await db.commit()

@@ -1,6 +1,7 @@
+from app.schemas.listing import ListingImageUpdate
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -239,3 +240,19 @@ async def search_listings(
             < total
         ),
     }
+
+@router.patch("/{listing_id}/images/{image_id}", response_model=ListingImageResponse)
+async def update_listing_image(
+    listing_id: UUID, image_id: UUID, data: ListingImageUpdate,
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user),
+):
+    return await ListingService.update_image(db, listing_id, image_id, current_user.id, data)
+
+
+@router.delete("/{listing_id}/images/{image_id}", status_code=204)
+async def delete_listing_image(
+    listing_id: UUID, image_id: UUID,
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user),
+):
+    await ListingService.delete_image(db, listing_id, image_id, current_user.id)
+    return Response(status_code=204)
