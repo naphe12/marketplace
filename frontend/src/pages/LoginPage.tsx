@@ -47,7 +47,18 @@ export default function LoginPage() {
       );
 
       const returnTo = searchParams.get("returnTo");
-      navigate(returnTo && /^\/listings\/[0-9a-f-]+$/i.test(returnTo) ? returnTo : "/", { replace: true });
+      const safeReturnTo =
+        returnTo?.startsWith("/") &&
+        !returnTo.startsWith("//")
+          ? returnTo
+          : "/";
+
+      navigate(
+        safeReturnTo,
+        {
+          replace: true,
+        },
+      );
     } catch (err) {
       setError(
         err instanceof Error

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_admin
 from app.core.database import get_db
+from app.models.audit import AuditLog
 from app.repositories.settings_repository import SettingsRepository
 from app.schemas.settings import (
     MarketplaceSettingsResponse,
@@ -37,8 +38,21 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
-    return await SettingsService.update(
+    settings = await SettingsService.update(
         db,
         admin.id,
         data,
     )
+
+    db.add(
+        AuditLog(
+            actor_user_id=admin.id,
+            action="SETTINGS_PUBLICATION_UPDATED",
+            target_type="SETTINGS",
+            metadata_json=data.model_dump(exclude_unset=True),
+        )
+    )
+
+    await db.commit()
+
+    return settings
