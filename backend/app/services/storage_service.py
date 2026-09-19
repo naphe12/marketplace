@@ -58,7 +58,7 @@ class StorageService:
         upload_url = s3.generate_presigned_url(
             ClientMethod="put_object",
             Params={
-                "Bucket": settings.S3_ACCESS_KEY_ID,
+                "Bucket": settings.S3_BUCKET,
                 "Key": object_key,
                 "ContentType": content_type,
             },
@@ -70,3 +70,15 @@ class StorageService:
             "object_key": object_key,
             "expires_in": 900,
         }
+
+    @staticmethod
+    async def signed_url(object_key: str) -> str:
+        from starlette.concurrency import run_in_threadpool
+
+        s3 = get_s3_client()
+        return await run_in_threadpool(
+            s3.generate_presigned_url,
+            ClientMethod="get_object",
+            Params={"Bucket": settings.S3_BUCKET, "Key": object_key},
+            ExpiresIn=900,
+        )

@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException
 
 from app.schemas.listing import ListingImageUpdate
 from uuid import UUID
@@ -385,3 +385,30 @@ async def confirm_image_upload(
     await db.refresh(image)
 
     return image
+
+
+@router.get("/{listing_id}", response_model=ListingDetailResponse)
+async def public_listing_detail(
+    listing_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    listing = await ListingRepository.get_by_id(db, listing_id)
+    if not listing or listing.deleted_at is not None or listing.status != "ACTIVE":
+        raise HTTPException(404, "Annonce introuvable.")
+
+    result = ListingResponse.model_validate(listing).model_dump()
+    result["attribute_values"] = listing.attribute_values
+    result["images"] = [
+        {
+            "id": image.id,
+            "image_url": await StorageService.signed_url(image.object_key),
+            "thumbnail_url": (
+                await StorageService.signed_url(image.thumbnail_object_key)
+                if image.thumbnail_object_key else None
+            ),
+            "position": image.position,
+            "is_primary": image.is_primary,
+        }
+        for image in listing.images
+    ]
+    return result

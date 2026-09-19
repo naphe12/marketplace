@@ -45,3 +45,10 @@ export type ListingSearchResponse = {
 
   has_more: boolean;
 };
+
+export type ListingDetail = Listing & {
+  description: string | null;
+  quantity: number;
+  allow_offers: boolean;
+  updated_at: string;
+};
