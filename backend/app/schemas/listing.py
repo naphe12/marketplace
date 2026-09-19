@@ -70,7 +70,8 @@ class ListingUpdate(BaseModel):
 
 
 class ListingImageCreate(BaseModel):
-    image_url: str
+    storage_key: str | None = None
+    image_url: str | None = None
     thumbnail_url: str | None = None
 
     position: int = 0

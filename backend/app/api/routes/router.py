@@ -31,3 +31,6 @@ api_router.include_router(    verifications_router)
 api_router.include_router(    moderation_router)
 api_router.include_router(    notifications_router)
 api_router.include_router(    favorites_router)
+
+from app.api.routes.images import router as images_router
+api_router.include_router(images_router)

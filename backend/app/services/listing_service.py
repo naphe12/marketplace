@@ -1,4 +1,6 @@
-from uuid import UUID
+from app.core.config import settings
+from app.services.storage_service import StorageService
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -173,13 +175,33 @@ class ListingService:
             seller_id,
         )
 
+        image_id = uuid4()
+        image_url = data.image_url
+        if data.storage_key:
+            prefix = f"listings/{listing.id}/"
+            if (
+                not data.storage_key.startswith(prefix)
+                or len(data.storage_key) <= len(prefix)
+                or ".." in data.storage_key.split("/")
+                or "\\" in data.storage_key
+            ):
+                raise HTTPException(400, "Chemin de stockage invalide pour cette annonce.")
+            if data.image_url or data.thumbnail_url:
+                raise HTTPException(400, "Utilisez storage_key seul pour une image du bucket.")
+            await StorageService.check_image(data.storage_key)
+            image_url = f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/images/{image_id}"
+        elif not image_url or not image_url.startswith(("https://", "http://")):
+            raise HTTPException(400, "Fournissez storage_key ou une URL HTTP valide.")
+
         if data.is_primary:
             for image in listing.images:
                 image.is_primary = False
 
         image = ListingImage(
+            id=image_id,
+            storage_key=data.storage_key,
             listing_id=listing.id,
-            image_url=data.image_url,
+            image_url=image_url,
             thumbnail_url=data.thumbnail_url,
             position=data.position,
             is_primary=data.is_primary,
