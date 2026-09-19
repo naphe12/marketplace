@@ -17,3 +17,4 @@ from app.models.verification import (
 )
 
 from app.models.notification import Notification
+from app.models.location import AdministrativeArea

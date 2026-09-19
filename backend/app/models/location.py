@@ -1,10 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
-    DateTime,
     ForeignKey,
     Numeric,
     String,
@@ -13,11 +12,17 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDMixin
+from app.models.base import Base
 
 
-class AdministrativeArea(UUIDMixin, Base):
+class AdministrativeArea(Base):
     __tablename__ = "administrative_areas"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
 
     parent_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
@@ -60,7 +65,6 @@ class AdministrativeArea(UUIDMixin, Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
