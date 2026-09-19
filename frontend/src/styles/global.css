@@ -2817,3 +2817,75 @@ a {
 
 .listing-detail__owner-actions { margin-bottom: 24px; }
 .listing-edit { scroll-margin-top: 100px; }
+
+.location-selector {
+  width: 100%;
+}
+
+.location-selector__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: #f8faf9;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.location-selector__icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.location-selector__intro > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.location-selector__intro strong {
+  font-size: 13px;
+}
+
+.location-selector__intro span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.autosave-status {
+  min-height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin: -12px 2px 12px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.autosave-status--saved {
+  color: var(--color-primary);
+}
+
+.autosave-status--error {
+  color: var(--color-danger);
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

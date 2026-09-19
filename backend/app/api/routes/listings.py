@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.repositories.listing_repository import ListingRepository
 from app.schemas.listing import (
     ListingAttributeValueCreate,
+    ListingAttributeValueUpsert,
     ListingAttributeValueResponse,
     ListingCreate,
     ListingDetailResponse,
@@ -51,12 +52,14 @@ router = APIRouter(
     response_model=list[ListingResponse],
 )
 async def my_listings(
+    status: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     return await ListingRepository.get_by_seller(
         db,
         current_user.id,
+        status=status,
     )
 
 
@@ -69,11 +72,11 @@ async def my_listing_detail(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return await ListingService.get_owned(
-        db,
-        listing_id,
-        current_user.id,
-    )
+    listing = await ListingService.get_owned(db, listing_id, current_user.id)
+    result = ListingResponse.model_validate(listing).model_dump()
+    result["attribute_values"] = listing.attribute_values
+    result["images"] = [await serialize_listing_image(image) for image in listing.images]
+    return result
 
 
 @router.post(
@@ -410,3 +413,20 @@ async def serialize_listing_image(image):
         "position": image.position,
         "is_primary": image.is_primary,
     }
+
+
+@router.put(
+    "/{listing_id}/attributes/{attribute_id}",
+    response_model=ListingAttributeValueResponse,
+)
+async def save_listing_attribute(
+    listing_id: UUID,
+    attribute_id: UUID,
+    payload: ListingAttributeValueUpsert,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    await ListingService.get_owned(db, listing_id, current_user.id)
+    return await ListingRepository.upsert_attribute(
+        db=db, listing_id=listing_id, attribute_id=attribute_id, payload=payload,
+    )

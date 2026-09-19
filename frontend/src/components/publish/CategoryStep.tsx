@@ -7,6 +7,7 @@ type Props = {
   categories: Category[];
 
   selectedId: string | null;
+  disabled?: boolean;
 
   onSelect: (
     category: Category,
@@ -18,6 +19,7 @@ export default function CategoryStep({
   categories,
   selectedId,
   onSelect,
+  disabled = false,
 }: Props) {
   return (
     <section className="publish-panel">
@@ -37,6 +39,7 @@ export default function CategoryStep({
           <button
             key={category.id}
             type="button"
+            disabled={disabled}
             className={[
               "publish-category-card",
 

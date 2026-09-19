@@ -32,6 +32,10 @@ export const router =
           element: <PublishPage />,
         },
         {
+          path: "/publish/:listingId",
+          element: <PublishPage />,
+        },
+        {
           path: "/messages",
           element: <MessagesPage />,
         },

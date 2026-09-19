@@ -10,7 +10,7 @@ class ListingCreate(BaseModel):
     administrative_area_id: UUID | None = None
 
     title: str = Field(
-        min_length=3,
+        min_length=0,
         max_length=200,
     )
 
@@ -47,7 +47,7 @@ class ListingUpdate(BaseModel):
 
     title: str | None = Field(
         default=None,
-        min_length=3,
+        min_length=0,
         max_length=200,
     )
 
@@ -97,14 +97,16 @@ class ListingImageResponse(BaseModel):
     )
 
 
-class ListingAttributeValueCreate(BaseModel):
-    attribute_id: UUID
-
+class ListingAttributeValueUpsert(BaseModel):
     value_text: str | None = None
     value_integer: int | None = None
     value_decimal: Decimal | None = None
     value_boolean: bool | None = None
     value_date: date | None = None
+
+
+class ListingAttributeValueCreate(ListingAttributeValueUpsert):
+    attribute_id: UUID
 
 
 class ListingAttributeValueResponse(BaseModel):

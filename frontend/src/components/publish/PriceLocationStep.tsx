@@ -1,8 +1,12 @@
+import LocationSelector from "./LocationSelector";
+
 type Props = {
   price: string;
   currency: string;
   priceType: string;
   allowOffers: boolean;
+  provinceId: string;
+  communeId: string;
 
   onPriceChange: (
     value: string,
@@ -19,6 +23,8 @@ type Props = {
   onAllowOffersChange: (
     value: boolean,
   ) => void;
+  onProvinceChange: (value: string) => void;
+  onCommuneChange: (value: string) => void;
 };
 
 
@@ -27,11 +33,15 @@ export default function PriceLocationStep({
   currency,
   priceType,
   allowOffers,
+  provinceId,
+  communeId,
 
   onPriceChange,
   onCurrencyChange,
   onPriceTypeChange,
   onAllowOffersChange,
+  onProvinceChange,
+  onCommuneChange,
 }: Props) {
   return (
     <section className="publish-panel">
@@ -157,16 +167,12 @@ export default function PriceLocationStep({
         Localisation
       </div>
 
-      <div className="form-field">
-        <span>
-          Province / commune
-        </span>
-
-        <p className="field-placeholder">
-          Nous brancherons ici
-          administrative_areas.
-        </p>
-      </div>
+      <LocationSelector
+        provinceId={provinceId}
+        communeId={communeId}
+        onProvinceChange={onProvinceChange}
+        onCommuneChange={onCommuneChange}
+      />
     </section>
   );
 }

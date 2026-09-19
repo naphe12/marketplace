@@ -280,9 +280,7 @@ function DynamicAttributeField({
               "INTEGER" ||
             attribute.data_type ===
               "DECIMAL"
-              ? Number(
-                  event.target.value,
-                )
+              ? (event.target.value === "" ? "" : Number(event.target.value))
               : event.target.value,
           )
         }

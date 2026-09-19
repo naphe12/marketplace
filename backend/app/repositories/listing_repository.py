@@ -1,3 +1,6 @@
+from sqlalchemy.dialects.postgresql import insert
+from app.models.listing import ListingAttributeValue
+from app.schemas.listing import ListingAttributeValueUpsert
 from uuid import UUID
 
 from sqlalchemy import select
@@ -79,15 +82,15 @@ class ListingRepository:
     async def get_by_seller(
         db: AsyncSession,
         seller_id: UUID,
+        status: str | None = None,
     ) -> list[Listing]:
-
-        result = await db.execute(
-            select(Listing)
-            .where(Listing.seller_id == seller_id)
-            .where(Listing.deleted_at.is_(None))
-            .order_by(Listing.created_at.desc())
-        )
-
+        query = select(Listing).where(
+            Listing.seller_id == seller_id,
+            Listing.deleted_at.is_(None),
+        ).order_by(Listing.updated_at.desc())
+        if status is not None:
+            query = query.where(Listing.status == status)
+        result = await db.execute(query)
         return list(result.scalars().all())
 
     @staticmethod
@@ -271,3 +274,24 @@ class ListingRepository:
         )
 
         return listings, total
+
+    @staticmethod
+    async def upsert_attribute(
+        db: AsyncSession,
+        listing_id: UUID,
+        attribute_id: UUID,
+        payload: ListingAttributeValueUpsert,
+    ) -> ListingAttributeValue:
+        values = payload.model_dump()
+        statement = insert(ListingAttributeValue).values(
+            listing_id=listing_id, attribute_id=attribute_id, **values,
+        )
+        statement = statement.on_conflict_do_update(
+            constraint="uq_listing_attribute_value",
+            set_=values,
+        ).returning(ListingAttributeValue)
+        result = await db.execute(statement.execution_options(populate_existing=True))
+        value = result.scalar_one()
+        await db.commit()
+        await db.refresh(value)
+        return value

@@ -55,6 +55,9 @@ class PublicationService:
                 ),
             )
 
+        if len(listing.title.strip()) < 3:
+            raise HTTPException(422, "Le titre doit contenir au moins 3 caractères avant publication.")
+
         package = await PublicationRepository.get_package(
             db,
             package_id,

@@ -141,7 +141,7 @@ class ListingService:
             raise HTTPException(422, "Un champ obligatoire ne peut pas être nul.")
         if "title" in values:
             values["title"] = values["title"].strip()
-            if len(values["title"]) < 3:
+            if listing.status != "DRAFT" and len(values["title"]) < 3:
                 raise HTTPException(422, "Le titre doit contenir au moins 3 caractères.")
 
         if "category_id" in values:
@@ -242,17 +242,15 @@ class ListingService:
             seller_id,
         )
 
-        value = ListingAttributeValue(
-            listing_id=listing.id,
-            attribute_id=data.attribute_id,
-            value_text=data.value_text,
-            value_integer=data.value_integer,
-            value_decimal=data.value_decimal,
-            value_boolean=data.value_boolean,
-            value_date=data.value_date,
+        value = next(
+            (item for item in listing.attribute_values if item.attribute_id == data.attribute_id),
+            None,
         )
-
-        db.add(value)
+        if value is None:
+            value = ListingAttributeValue(listing_id=listing.id, attribute_id=data.attribute_id)
+            db.add(value)
+        for key, field_value in data.model_dump(exclude={"attribute_id"}).items():
+            setattr(value, key, field_value)
 
         await db.commit()
         await db.refresh(value)
@@ -267,6 +265,9 @@ class ListingService:
             listing_id,
             seller_id,
         )
+
+        if len(listing.title.strip()) < 3:
+            raise HTTPException(422, "Le titre doit contenir au moins 3 caractères avant publication.")
 
         settings = await SettingsRepository.get(db)
 
