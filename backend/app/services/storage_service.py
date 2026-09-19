@@ -1,52 +1,72 @@
-from functools import lru_cache
+from pathlib import Path
+from uuid import UUID, uuid4
 
-import boto3
-from botocore.config import Config
-from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException
-from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
+from app.core.storage import get_s3_client
 
 
-@lru_cache
-def storage_client():
-    if not all((settings.S3_ENDPOINT_URL, settings.S3_ACCESS_KEY_ID,
-                settings.S3_SECRET_ACCESS_KEY, settings.S3_BUCKET)):
-        raise HTTPException(503, "Stockage des images non configuré.")
-    return boto3.client(
-        "s3", endpoint_url=settings.S3_ENDPOINT_URL,
-        aws_access_key_id=settings.S3_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY,
-        region_name=settings.S3_REGION,
-        config=Config(signature_version="s3v4", connect_timeout=5,
-                      read_timeout=10, retries={"max_attempts": 2}),
-    )
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
 
 
 class StorageService:
-    @staticmethod
-    async def check_image(key: str):
-        try:
-            metadata = await run_in_threadpool(
-                storage_client().head_object, Bucket=settings.S3_BUCKET, Key=key,
-            )
-        except ClientError as exc:
-            if exc.response.get("Error", {}).get("Code") in {"404", "NoSuchKey", "NotFound"}:
-                raise HTTPException(404, "Image introuvable dans le bucket.") from None
-            raise HTTPException(503, "Stockage des images indisponible.") from None
-        except BotoCoreError:
-            raise HTTPException(503, "Stockage des images indisponible.") from None
-        if metadata.get("ContentType") not in {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}:
-            raise HTTPException(400, "Le fichier doit être une image JPEG, PNG, WebP, GIF ou AVIF.")
 
     @staticmethod
-    async def signed_url(key: str) -> str:
-        try:
-            return await run_in_threadpool(
-                storage_client().generate_presigned_url,
-                "get_object", Params={"Bucket": settings.S3_BUCKET, "Key": key},
-                ExpiresIn=300,
+    def prepare_listing_image_upload(
+        *,
+        listing_id: UUID,
+        content_type: str,
+        size_bytes: int,
+    ):
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Format non supporté. "
+                    "Utilisez JPEG, PNG ou WebP."
+                ),
             )
-        except (ClientError, BotoCoreError):
-            raise HTTPException(503, "Stockage des images indisponible.") from None
+
+        max_size = 8 * 1024 * 1024
+
+        if size_bytes > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "La photo ne peut pas dépasser "
+                    "8 MB."
+                ),
+            )
+
+        extension = ALLOWED_IMAGE_TYPES[
+            content_type
+        ]
+
+        object_key = (
+            f"listings/"
+            f"{listing_id}/"
+            f"{uuid4()}{extension}"
+        )
+
+        s3 = get_s3_client()
+
+        upload_url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": settings.BUCKET_NAME,
+                "Key": object_key,
+                "ContentType": content_type,
+            },
+            ExpiresIn=900,
+        )
+
+        return {
+            "upload_url": upload_url,
+            "object_key": object_key,
+            "expires_in": 900,
+        }

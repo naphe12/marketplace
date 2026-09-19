@@ -75,3 +75,21 @@ class CategoryRepository:
         await db.refresh(attribute)
 
         return attribute
+    @staticmethod
+    async def get_attributes(
+        db: AsyncSession,
+        category_id: UUID,
+    ) -> list[CategoryAttribute]:
+
+        result = await db.execute(
+            select(CategoryAttribute)
+            .where(
+                CategoryAttribute.category_id == category_id
+            )
+            .order_by(
+                CategoryAttribute.sort_order,
+                CategoryAttribute.name,
+            )
+        )
+
+        return list(result.scalars().all())

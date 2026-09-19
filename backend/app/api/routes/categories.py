@@ -1,3 +1,4 @@
+from http.client import HTTPException
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -86,4 +87,28 @@ async def create_attribute(
         db,
         category_id,
         data,
+    )
+
+@router.get(
+    "/{category_id}/attributes",
+    response_model=list[CategoryAttributeResponse],
+)
+async def get_category_attributes(
+    category_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    category = await CategoryRepository.get_by_id(
+        db,
+        category_id,
+    )
+
+    if not category:
+        raise HTTPException(
+            status_code=404,
+            detail="Catégorie introuvable.",
+        )
+
+    return await CategoryRepository.get_attributes(
+        db,
+        category_id,
     )

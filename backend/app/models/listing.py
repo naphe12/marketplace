@@ -128,7 +128,7 @@ class Listing(UUIDMixin, TimestampMixin, Base):
     )
 
 
-class ListingImage(UUIDMixin, Base):
+class ListingImage(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "listing_images"
 
     listing_id: Mapped[UUID] = mapped_column(
@@ -140,48 +140,39 @@ class ListingImage(UUIDMixin, Base):
         index=True,
     )
 
-    storage_key: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    image_url: Mapped[str] = mapped_column(
-        Text,
+    object_key: Mapped[str] = mapped_column(
+        String(500),
         nullable=False,
+        unique=True,
     )
 
-    thumbnail_url: Mapped[str | None] = mapped_column(
-        Text,
+    thumbnail_object_key: Mapped[str | None] = mapped_column(
+        String(500),
         nullable=True,
     )
 
     position: Mapped[int] = mapped_column(
-        Integer,
         default=0,
         nullable=False,
     )
 
-    image_hash: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-    )
-
-    perceptual_hash: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-    )
-
     is_primary: Mapped[bool] = mapped_column(
-        Boolean,
         default=False,
         nullable=False,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        nullable=False,
+    mime_type: Mapped[str | None] = mapped_column(
+        String(100),
     )
 
-    listing: Mapped["Listing"] = relationship(
-        back_populates="images",
+    file_size: Mapped[int | None] = mapped_column()
+
+    image_hash: Mapped[str | None] = mapped_column(
+        String(128),
+    )
+
+    perceptual_hash: Mapped[str | None] = mapped_column(
+        String(128),
     )
 
 

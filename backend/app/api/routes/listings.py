@@ -1,3 +1,5 @@
+from http.client import HTTPException
+
 from app.schemas.listing import ListingImageUpdate
 from uuid import UUID
 
@@ -24,6 +26,19 @@ from decimal import Decimal
 from app.schemas.listing import (
     ListingSearchResponse,
 )
+
+from app.schemas.upload import (
+    ImageUploadPrepareRequest,
+    ImageUploadPrepareResponse,
+    ImageUploadConfirmRequest,
+)
+
+from app.services.storage_service import (
+    StorageService,
+)
+from backend.app.core.storage import get_s3_client
+from backend.app.models import settings
+from backend.app.models.listing import ListingImage
 
 
 router = APIRouter(
@@ -256,3 +271,117 @@ async def delete_listing_image(
 ):
     await ListingService.delete_image(db, listing_id, image_id, current_user.id)
     return Response(status_code=204)
+
+@router.post(
+    "/{listing_id}/images/prepare",
+    response_model=ImageUploadPrepareResponse,
+)
+async def prepare_image_upload(
+    listing_id: UUID,
+    payload: ImageUploadPrepareRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = await ListingRepository.get_by_id(
+        db,
+        listing_id,
+    )
+
+    if not listing:
+        raise HTTPException(
+            status_code=404,
+            detail="Annonce introuvable.",
+        )
+
+    if listing.seller_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Accès interdit.",
+        )
+
+    return (
+        StorageService.prepare_listing_image_upload(
+            listing_id=listing_id,
+            content_type=payload.content_type,
+            size_bytes=payload.size_bytes,
+        )
+    )
+@staticmethod
+def object_exists(
+    object_key: str,
+) -> bool:
+
+    s3 = get_s3_client()
+
+    try:
+        s3.head_object(
+            Bucket=settings.S3_ACCESS_KEY_ID,
+            Key=object_key,
+        )
+
+        return True
+
+    except Exception:
+        return False
+
+@router.post(
+    "/{listing_id}/images/confirm",
+)
+async def confirm_image_upload(
+    listing_id: UUID,
+    payload: ImageUploadConfirmRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = await ListingRepository.get_by_id(
+        db,
+        listing_id,
+    )
+
+    if not listing:
+        raise HTTPException(
+            404,
+            "Annonce introuvable.",
+        )
+
+    if listing.seller_id != current_user.id:
+        raise HTTPException(
+            403,
+            "Accès interdit.",
+        )
+
+    expected_prefix = (
+        f"listings/{listing_id}/"
+    )
+
+    if not payload.object_key.startswith(
+        expected_prefix
+    ):
+        raise HTTPException(
+            400,
+            "Clé d'image invalide.",
+        )
+
+    if not StorageService.object_exists(
+        payload.object_key
+    ):
+        raise HTTPException(
+            400,
+            "La photo n'a pas été trouvée.",
+        )
+
+    image = ListingImage(
+        listing_id=listing.id,
+        object_key=payload.object_key,
+        mime_type=payload.content_type,
+        file_size=payload.size_bytes,
+        position=payload.position,
+        is_primary=payload.is_primary,
+    )
+
+    db.add(image)
+
+    await db.commit()
+    await db.refresh(image)
+
+    return image
