@@ -20,6 +20,8 @@ import {
 
 import "./styles/global.css";
 
+import "leaflet/dist/leaflet.css";
+
 
 createRoot(
   document.getElementById("root")!,

@@ -7,12 +7,23 @@ export type SaveState = "idle" | "saving" | "saved" | "error";
 type ListingDraft = {
   title: string;
   description: string;
+
   condition: string;
+
   price: string;
   currency: string;
   price_type: string;
+
   allow_offers: boolean;
-  administrative_area_id: string | null;
+
+  administrative_area_id:
+    string | null;
+
+  latitude:
+    number | null;
+
+  longitude:
+    number | null;
 };
 
 export function useListingAutosave(
