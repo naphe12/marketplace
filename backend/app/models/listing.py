@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -128,8 +129,14 @@ class Listing(UUIDMixin, TimestampMixin, Base):
     )
 
 
-class ListingImage(UUIDMixin, TimestampMixin, Base):
+class ListingImage(UUIDMixin, Base):
     __tablename__ = "listing_images"
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
 
     listing_id: Mapped[UUID] = mapped_column(
         ForeignKey(
