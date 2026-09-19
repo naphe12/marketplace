@@ -58,6 +58,8 @@ export function useListingAutosave(
             price_type: draft.price_type,
             allow_offers: draft.allow_offers,
             administrative_area_id: draft.administrative_area_id,
+            latitude: draft.latitude,
+            longitude: draft.longitude,
           }),
         });
         setSaveState("saved");
@@ -77,6 +79,8 @@ export function useListingAutosave(
     draft.price_type,
     draft.allow_offers,
     draft.administrative_area_id,
+    draft.latitude,
+    draft.longitude,
   ]);
 
   return saveState;

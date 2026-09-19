@@ -144,6 +144,9 @@ class ListingResponse(BaseModel):
     status: str
     allow_offers: bool
 
+    latitude: Decimal | None
+    longitude: Decimal | None
+
     published_at: datetime | None
     expires_at: datetime | None
 
@@ -178,6 +181,9 @@ class ListingCardResponse(BaseModel):
     condition: str | None
 
     status: str
+
+    latitude: Decimal | None
+    longitude: Decimal | None
 
     created_at: datetime
     published_at: datetime | None
