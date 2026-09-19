@@ -36,9 +36,9 @@ from app.schemas.upload import (
 from app.services.storage_service import (
     StorageService,
 )
-from backend.app.core.storage import get_s3_client
-from backend.app.models import settings
-from backend.app.models.listing import ListingImage
+from app.core.storage import get_s3_client
+from app.models import settings
+from app.models.listing import ListingImage
 
 
 router = APIRouter(
