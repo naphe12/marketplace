@@ -39,15 +39,11 @@ class TokenResponse(BaseModel):
 
 class UserResponse(BaseModel):
     id: UUID
-
     phone: str
     email: str | None
-
-    phone_verified: bool
-    email_verified: bool
-
     account_type: str
     status: str
+    is_admin: bool
 
     model_config = ConfigDict(
         from_attributes=True
