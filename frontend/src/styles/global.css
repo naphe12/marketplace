@@ -2814,3 +2814,6 @@ a {
 .listing-edit { margin: 24px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
 .listing-edit__fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 18px; }
 .listing-edit .publish-actions { flex-wrap: wrap; gap: 12px; }
+
+.listing-detail__owner-actions { margin-bottom: 24px; }
+.listing-edit { scroll-margin-top: 100px; }

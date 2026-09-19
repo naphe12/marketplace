@@ -36,8 +36,6 @@ from app.schemas.upload import (
 from app.services.storage_service import (
     StorageService,
 )
-from app.core.storage import get_s3_client
-from app.models import settings
 from app.models.listing import ListingImage
 
 
@@ -261,7 +259,8 @@ async def update_listing_image(
     listing_id: UUID, image_id: UUID, data: ListingImageUpdate,
     db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user),
 ):
-    return await ListingService.update_image(db, listing_id, image_id, current_user.id, data)
+    image = await ListingService.update_image(db, listing_id, image_id, current_user.id, data)
+    return await serialize_listing_image(image)
 
 
 @router.delete("/{listing_id}/images/{image_id}", status_code=204)
@@ -299,6 +298,10 @@ async def prepare_image_upload(
             detail="Accès interdit.",
         )
 
+    ListingService.ensure_images_editable(listing)
+    if len(listing.images) >= 8:
+        raise HTTPException(400, "Vous pouvez ajouter au maximum 8 photos.")
+
     return (
         StorageService.prepare_listing_image_upload(
             listing_id=listing_id,
@@ -306,24 +309,6 @@ async def prepare_image_upload(
             size_bytes=payload.size_bytes,
         )
     )
-@staticmethod
-def object_exists(
-    object_key: str,
-) -> bool:
-
-    s3 = get_s3_client()
-
-    try:
-        s3.head_object(
-            Bucket=settings.S3_ACCESS_KEY_ID,
-            Key=object_key,
-        )
-
-        return True
-
-    except Exception:
-        return False
-
 @router.post(
     "/{listing_id}/images/confirm",
 )
@@ -350,6 +335,10 @@ async def confirm_image_upload(
             "Accès interdit.",
         )
 
+    ListingService.ensure_images_editable(listing)
+    if len(listing.images) >= 8:
+        raise HTTPException(400, "Vous pouvez ajouter au maximum 8 photos.")
+
     expected_prefix = (
         f"listings/{listing_id}/"
     )
@@ -362,13 +351,17 @@ async def confirm_image_upload(
             "Clé d'image invalide.",
         )
 
-    if not StorageService.object_exists(
+    if not await StorageService.object_exists(
         payload.object_key
     ):
         raise HTTPException(
             400,
             "La photo n'a pas été trouvée.",
         )
+
+    if payload.is_primary:
+        for existing in listing.images:
+            existing.is_primary = False
 
     image = ListingImage(
         listing_id=listing.id,
@@ -384,7 +377,7 @@ async def confirm_image_upload(
     await db.commit()
     await db.refresh(image)
 
-    return image
+    return await serialize_listing_image(image)
 
 
 @router.get("/{listing_id}", response_model=ListingDetailResponse)
@@ -398,17 +391,18 @@ async def public_listing_detail(
 
     result = ListingResponse.model_validate(listing).model_dump()
     result["attribute_values"] = listing.attribute_values
-    result["images"] = [
-        {
-            "id": image.id,
-            "image_url": await StorageService.signed_url(image.object_key),
-            "thumbnail_url": (
-                await StorageService.signed_url(image.thumbnail_object_key)
-                if image.thumbnail_object_key else None
-            ),
-            "position": image.position,
-            "is_primary": image.is_primary,
-        }
-        for image in listing.images
-    ]
+    result["images"] = [await serialize_listing_image(image) for image in listing.images]
     return result
+
+
+async def serialize_listing_image(image):
+    return {
+        "id": image.id,
+        "image_url": await StorageService.signed_url(image.object_key),
+        "thumbnail_url": (
+            await StorageService.signed_url(image.thumbnail_object_key)
+            if image.thumbnail_object_key else None
+        ),
+        "position": image.position,
+        "is_primary": image.is_primary,
+    }

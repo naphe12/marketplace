@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import PhotoUploader from "../components/publish/PhotoUploader";
 import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
 
 export default function ListingDetailPage() {
   const { listingId } = useParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [listing, setListing] = useState<ListingDetail | null>(null);
@@ -67,6 +68,27 @@ export default function ListingDetailPage() {
         </div>
       )}
       {!loading && listing && (
+        <div className="listing-detail__owner-actions">
+          {authLoading ? <p role="status">Vérification de la connexion…</p> : !user ? (
+            <Link className="secondary-button" to={`/login?returnTo=${encodeURIComponent(`/listings/${listing.id}`)}`}>
+              Se connecter pour modifier son annonce
+            </Link>
+          ) : user.id === listing.seller_id ? (
+            <button type="button" className="primary-button" disabled={editing}
+              onClick={() => {
+                setEditing(true);
+                setSaved(false);
+                requestAnimationFrame(() => {
+                  document.querySelector<HTMLFormElement>(".listing-edit")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document.querySelector<HTMLInputElement>(".listing-edit input")?.focus({ preventScroll: true });
+                });
+              }}>
+              {editing ? "Modification en cours" : "Modifier l’annonce"}
+            </button>
+          ) : <p>Seul le compte ayant publié cette annonce peut la modifier.</p>}
+        </div>
+      )}
+      {!loading && listing && (
         <article className="listing-detail__grid">
           <div>
             <div className="listing-detail__photo">
@@ -86,12 +108,13 @@ export default function ListingDetailPage() {
           <section className="listing-detail__information">
             <h1>{listing.title}</h1>
             {saved && <p role="status">Les modifications ont été enregistrées.</p>}
-            {user?.id === listing.seller_id && !editing && (
-              <button type="button" className="secondary-button" onClick={() => { setEditing(true); setSaved(false); }}>
-                Modifier l’annonce
-              </button>
-            )}
             {editing && user?.id === listing.seller_id && (
+              <div>
+              <PhotoUploader key={`photos-${listing.id}`} listingId={listing.id} initialImages={listing.images}
+                onChange={images => {
+                  setListing(current => current ? { ...current, images } : current);
+                  setSelectedImage(images.find(image => image.is_primary)?.id ?? null);
+                }} />
               <EditListingForm key={listing.id} listing={listing}
                 onCancel={() => setEditing(false)}
                 onSaved={changes => {
@@ -99,6 +122,7 @@ export default function ListingDetailPage() {
                   setEditing(false);
                   setSaved(true);
                 }} />
+              </div>
             )}
             <p className="listing-detail__price">
               {listing.price === null ? "Prix sur demande" : `${new Intl.NumberFormat("fr-BI", {

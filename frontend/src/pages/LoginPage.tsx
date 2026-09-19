@@ -5,6 +5,7 @@ import {
 
 import {
   useNavigate,
+  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -14,6 +15,7 @@ import {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const { login } = useAuth();
 
@@ -44,7 +46,8 @@ export default function LoginPage() {
         password,
       );
 
-      navigate("/");
+      const returnTo = searchParams.get("returnTo");
+      navigate(returnTo && /^\/listings\/[0-9a-f-]+$/i.test(returnTo) ? returnTo : "/", { replace: true });
     } catch (err) {
       setError(
         err instanceof Error

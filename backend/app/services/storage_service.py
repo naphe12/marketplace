@@ -82,3 +82,21 @@ class StorageService:
             Params={"Bucket": settings.S3_BUCKET, "Key": object_key},
             ExpiresIn=900,
         )
+
+
+    @staticmethod
+    async def object_exists(object_key: str) -> bool:
+        from botocore.exceptions import ClientError
+        from starlette.concurrency import run_in_threadpool
+
+        try:
+            await run_in_threadpool(
+                get_s3_client().head_object,
+                Bucket=settings.S3_BUCKET,
+                Key=object_key,
+            )
+        except ClientError as error:
+            if error.response.get("Error", {}).get("Code") in {"404", "NoSuchKey", "NotFound"}:
+                return False
+            raise
+        return True

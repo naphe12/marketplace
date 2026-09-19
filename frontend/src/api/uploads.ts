@@ -1,3 +1,4 @@
+import type { ListingImage } from "../types/listing";
 import {
   apiRequest,
 } from "./client";
@@ -55,7 +56,7 @@ export async function uploadListingImage(
   }
 
 
-  return apiRequest(
+  return apiRequest<ListingImage>(
     `/listings/${listingId}/images/confirm`,
     {
       method: "POST",
