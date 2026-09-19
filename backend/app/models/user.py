@@ -70,6 +70,12 @@ class User(UUIDMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
 
+    is_admin: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+)
+
 
 class UserProfile(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "user_profiles"
