@@ -73,11 +73,15 @@ export default function PublishPage() {
   const [saving, setSaving] =
     useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     apiRequest<Category[]>(
       "/categories",
-    ).then(setCategories);
+    ).then(setCategories).catch(error => {
+      setError(error instanceof Error ? error.message : "Impossible de charger les catégories.");
+    });
   }, []);
 
 
@@ -108,6 +112,8 @@ export default function PublishPage() {
       return;
     }
 
+    if (saving) return;
+    setError(null);
     setSaving(true);
 
     try {
@@ -124,7 +130,7 @@ export default function PublishPage() {
               category_id:
                 selectedCategory.id,
 
-              title,
+              title: title.trim(),
               description,
 
               price: null,
@@ -215,6 +221,8 @@ export default function PublishPage() {
 
 
       setStep(3);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Impossible d’enregistrer l’annonce. Réessayez.");
     } finally {
       setSaving(false);
     }
@@ -226,6 +234,8 @@ export default function PublishPage() {
       return;
     }
 
+    if (saving) return;
+    setError(null);
     setSaving(true);
 
     try {
@@ -253,6 +263,8 @@ export default function PublishPage() {
       );
 
       setStep(5);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Impossible d’enregistrer l’annonce. Réessayez.");
     } finally {
       setSaving(false);
     }
@@ -411,11 +423,16 @@ export default function PublishPage() {
         )}
 
 
+        {error && (
+          <p className="form-error" role="alert">{error}</p>
+        )}
+
         <div className="publish-actions">
           {step > 1 && (
             <button
               type="button"
               className="secondary-button"
+              disabled={saving}
               onClick={() =>
                 setStep(
                   current =>

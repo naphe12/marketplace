@@ -46,15 +46,25 @@ export async function apiRequest<T>(
   );
 
   if (!response.ok) {
-    let message = "Une erreur est survenue.";
+    let message = `Une erreur est survenue (HTTP ${response.status}).`;
 
     try {
       const data = await response.json();
 
-      message =
-        data.detail ??
-        data.message ??
-        message;
+      const detail: unknown = data.detail ?? data.message;
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        const errors = detail.flatMap((item: unknown) => {
+          if (!item || typeof item !== "object" || !("msg" in item)
+              || typeof item.msg !== "string") return [];
+          const field = "loc" in item && Array.isArray(item.loc)
+            ? item.loc.filter(part => part !== "body").join(".")
+            : "";
+          return [field ? `${field} : ${item.msg}` : item.msg];
+        });
+        if (errors.length) message = errors.join(" ; ");
+      }
     } catch {
       // réponse non JSON
     }

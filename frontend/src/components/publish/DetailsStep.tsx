@@ -76,7 +76,7 @@ export default function DetailsStep({
         />
 
         <small>
-          {title.length}/200
+          {title.length}/200 — 3 caractères minimum
         </small>
       </label>
 
