@@ -58,7 +58,7 @@ class StorageService:
         upload_url = s3.generate_presigned_url(
             ClientMethod="put_object",
             Params={
-                "Bucket": settings.BUCKET_NAME,
+                "Bucket": settings.S3_ACCESS_KEY_ID,
                 "Key": object_key,
                 "ContentType": content_type,
             },
