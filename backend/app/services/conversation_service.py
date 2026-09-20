@@ -31,6 +31,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
 
+from uuid import UUID
+
+from fastapi import HTTPException
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.conversation import Conversation
+
+
 
 class ConversationService:
 
@@ -309,6 +318,31 @@ class ConversationService:
         )
 
         if not conversation:
+            raise HTTPException(
+                status_code=404,
+                detail="Conversation introuvable.",
+            )
+
+        return conversation
+
+    
+
+    async def get_user_conversation(
+        db: AsyncSession,
+        conversation_id: UUID,
+        user_id: UUID,
+    ) -> Conversation:
+        conversation = await db.scalar(
+            select(Conversation).where(
+                Conversation.id == conversation_id,
+                or_(
+                    Conversation.buyer_id == user_id,
+                    Conversation.seller_id == user_id,
+                ),
+            )
+        )
+
+        if conversation is None:
             raise HTTPException(
                 status_code=404,
                 detail="Conversation introuvable.",
