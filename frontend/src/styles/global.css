@@ -5673,3 +5673,136 @@ body {
       block;
   }
 }
+
+.offer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.offer-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 440px;
+
+  padding: 24px;
+
+  border-radius: 18px;
+  background: white;
+
+  box-shadow:
+    0 24px 60px
+    rgba(15, 23, 42, 0.25);
+}
+
+.offer-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+
+  border: 0;
+  background: transparent;
+
+  font-size: 28px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.offer-modal h2 {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.offer-modal__listing-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+
+  color: #64748b;
+}
+
+.offer-modal__price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+  padding: 14px;
+
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.offer-modal__label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-weight: 600;
+}
+
+.offer-modal__input {
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+
+  background: white;
+}
+
+.offer-modal__input:focus-within {
+  border-color: #0f766e;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(15, 118, 110, 0.1);
+}
+
+.offer-modal__input input {
+  flex: 1;
+  min-width: 0;
+
+  padding: 13px 14px;
+
+  border: 0;
+  outline: none;
+
+  font-size: 17px;
+}
+
+.offer-modal__input span {
+  padding-right: 14px;
+  padding-left: 14px;
+
+  font-weight: 600;
+  color: #475569;
+}
+
+.offer-modal__percentage {
+  margin-top: 8px;
+
+  font-size: 13px;
+  color: #64748b;
+}
+
+.offer-modal__submit {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.offer-modal__skip {
+  width: 100%;
+  margin-top: 8px;
+}
