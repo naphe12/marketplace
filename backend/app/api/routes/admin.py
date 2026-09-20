@@ -18,7 +18,7 @@ from app.models.moderation import FraudSignal, ModerationAction, Report
 from app.models.notification import Notification
 from app.models.publication import ListingPackage
 from app.models.transaction import Transaction
-from app.models.trust import Review
+from app.models.review import Review
 from app.models.user import User
 from app.models.verification import UserVerification
 from app.schemas.admin import (

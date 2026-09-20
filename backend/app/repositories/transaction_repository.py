@@ -4,7 +4,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import Transaction
-from app.models.trust import Review
+from app.models.review import Review
 
 
 class TransactionRepository:

@@ -8,8 +8,9 @@ from app.models.billing import (BillingOrder,BillingPayment,)
 from app.models.conversation import (    Conversation,    ConversationParticipant,    Message,)
 from app.models.offer import Offer
 from app.models.transaction import Transaction
-from app.models.trust import (Review,    TransactionStatusHistory,    TrustEvent,)
-from app.models.trust import (    ReputationProfile,    Review,    TransactionStatusHistory,    TrustEvent,)
+from app.models.trust import ( TransactionStatusHistory,    TrustEvent,)
+from app.models.trust import (    ReputationProfile,      TransactionStatusHistory,    TrustEvent,)
+from app.models.review import Review
 from app.models.verification import (
     PhoneVerificationChallenge,
     UserVerification,
