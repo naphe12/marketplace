@@ -73,7 +73,7 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
     )
 
 
-class ConversationParticipant(UUIDMixin,Base):
+class ConversationParticipant(TimestampMixin,Base):
     __tablename__ = "conversation_participants"
 
     conversation_id: Mapped[UUID] = mapped_column(
