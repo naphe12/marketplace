@@ -28,8 +28,8 @@ from app.models.transaction import Transaction
 from app.models.user import User
 
 from app.schemas.review import ReviewCreate
-from backend.app.models.moderation import FraudSignal
-from backend.app.schemas.fraud import FraudReviewRequest
+from app.models.moderation import FraudSignal
+from app.schemas.fraud import FraudReviewRequest
 
 
 router = APIRouter(
