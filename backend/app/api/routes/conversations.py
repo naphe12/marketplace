@@ -16,7 +16,7 @@ from app.schemas.conversation import (
 from app.services.conversation_service import ConversationService
 from app.models.user import User
 from app.schemas.offer import OfferCreate
-from app.services.conversation_service import get_user_conversation
+from app.services.conversation_service  import get_user_conversation
 from app.services.offer_service import OfferService
 
 
