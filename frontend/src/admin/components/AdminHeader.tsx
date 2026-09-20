@@ -1,5 +1,7 @@
 import {
+  ExternalLink,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -52,6 +54,11 @@ export default function AdminHeader() {
 
   return (
     <header className="admin-header">
+      <div className="admin-header__context">
+        <strong>Back-office</strong>
+        <span>Contrôle opérationnel marketplace</span>
+      </div>
+
       <form className="admin-search admin-search-box" onSubmit={submit}>
         <Search size={18} />
 
@@ -88,14 +95,13 @@ export default function AdminHeader() {
           to="/"
           className="admin-link"
         >
-          Voir le site
+          <ExternalLink size={16} />
+          <span>Voir le site</span>
         </Link>
 
         <div className="admin-profile">
           <span>
-            {user?.phone
-              ?.replace("+257", "")
-              .slice(0, 2) ?? "AD"}
+            <ShieldCheck size={18} />
           </span>
 
           <div>

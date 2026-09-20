@@ -24,6 +24,18 @@ class PublicationCreate(BaseModel):
     package_id: UUID
 
 
+class CreatePublicationOrder(BaseModel):
+    package_id: UUID
+
+
+class PublicationOrderCreatedResponse(BaseModel):
+    id: UUID
+    amount: Decimal
+    currency: str
+    duration_days: int
+    status: str
+
+
 class PublicationResponse(BaseModel):
     id: UUID
 

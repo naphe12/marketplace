@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.schemas.billing import (
     BillingPaymentResponse,
@@ -35,6 +36,27 @@ async def create_payment(
         current_user.id,
         data.payment_method,
         data.provider,
+    )
+
+
+@router.post(
+    "/orders/{order_id}/simulate-payment",
+)
+async def simulate_order_payment(
+    order_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not settings.SIMULATED_PAYMENTS_ENABLED:
+        raise HTTPException(
+            status_code=403,
+            detail="Paiement simulé désactivé.",
+        )
+
+    return await BillingService.simulate_order_payment(
+        db,
+        order_id,
+        current_user.id,
     )
 
 

@@ -30,9 +30,12 @@ import VerificationsPage from "../admin/pages/VerificationsPage";
 import { useAuth } from "../auth/AuthContext";
 import AppShell from "../components/layout/AppShell";
 
+import ConversationPage from "../pages/ConversationPage";
 import FavoritesPage from "../pages/FavoritesPage";
 import HomePage from "../pages/HomePage";
+import ListingCheckoutPage from "../pages/ListingCheckoutPage";
 import ListingDetailPage from "../pages/ListingDetailPage";
+import ListingPackagesPage from "../pages/ListingPackagesPage";
 import LoginPage from "../pages/LoginPage";
 import MessagesPage from "../pages/MessagesPage";
 import ProfilePage from "../pages/ProfilePage";
@@ -201,6 +204,10 @@ export const router =
           element: <MessagesPage />,
         },
         {
+          path: "/messages/:conversationId",
+          element: <ConversationPage />,
+        },
+        {
           path: "/favorites",
           element: <FavoritesPage />,
         },
@@ -213,6 +220,14 @@ export const router =
           element: (
             <ListingDetailPage />
           ),
+        },
+        {
+          path: "/listings/:listingId/packages",
+          element: <ListingPackagesPage />,
+        },
+        {
+          path: "/listings/:listingId/checkout/:packageId",
+          element: <ListingCheckoutPage />,
         },
         {
           path: "*",

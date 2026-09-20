@@ -2,7 +2,7 @@
 import asyncio
 from datetime import datetime, time, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, engine
@@ -55,6 +55,20 @@ async def process_expirations(db: AsyncSession, now: datetime | None = None):
             commit=False,
         )
     await db.commit()
+
+
+async def expire_active_listings(db: AsyncSession):
+    result = await db.execute(
+        update(Listing)
+        .where(
+            Listing.status == "ACTIVE",
+            Listing.expires_at.is_not(None),
+            Listing.expires_at <= datetime.now(timezone.utc),
+        )
+        .values(status="EXPIRED")
+    )
+    await db.commit()
+    return result.rowcount or 0
 
 
 async def main():

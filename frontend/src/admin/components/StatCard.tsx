@@ -8,6 +8,8 @@ type Props = {
   value: string | number;
   detail: string;
   icon: LucideIcon;
+  tone?: "default" | "success" | "warning" | "danger";
+  trend?: string;
 };
 
 
@@ -16,9 +18,11 @@ export default function StatCard({
   value,
   detail,
   icon: Icon,
+  tone = "default",
+  trend,
 }: Props) {
   return (
-    <article className="admin-stat-card">
+    <article className={`admin-stat-card admin-stat-card--${tone}`}>
       <div>
         <span>{label}</span>
         <strong>{value}</strong>
@@ -28,6 +32,10 @@ export default function StatCard({
       <div className="admin-stat-card__icon">
         <Icon size={21} />
       </div>
+
+      {trend && (
+        <em>{trend}</em>
+      )}
     </article>
   );
 }

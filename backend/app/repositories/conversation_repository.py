@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import exists, select
+from sqlalchemy import exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import (
@@ -17,13 +18,15 @@ class ConversationRepository:
         db: AsyncSession,
         listing_id: UUID,
         buyer_id: UUID,
+        seller_id: UUID,
     ) -> Conversation | None:
 
         result = await db.execute(
             select(Conversation)
             .where(
                 Conversation.listing_id == listing_id,
-                Conversation.created_by_user_id == buyer_id,
+                Conversation.buyer_id == buyer_id,
+                Conversation.seller_id == seller_id,
             )
         )
 
@@ -59,6 +62,26 @@ class ConversationRepository:
             select(Conversation)
             .where(
                 Conversation.id == conversation_id
+            )
+        )
+
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_for_user_by_id(
+        db: AsyncSession,
+        conversation_id: UUID,
+        user_id: UUID,
+    ) -> Conversation | None:
+
+        result = await db.execute(
+            select(Conversation)
+            .where(
+                Conversation.id == conversation_id,
+                or_(
+                    Conversation.buyer_id == user_id,
+                    Conversation.seller_id == user_id,
+                ),
             )
         )
 
@@ -123,3 +146,31 @@ class ConversationRepository:
         )
 
         return list(result.scalars().all())
+
+    @staticmethod
+    async def mark_read(
+        db: AsyncSession,
+        conversation_id: UUID,
+        user_id: UUID,
+    ) -> None:
+
+        participant = await db.scalar(
+            select(ConversationParticipant)
+            .where(
+                ConversationParticipant.conversation_id == conversation_id,
+                ConversationParticipant.user_id == user_id,
+            )
+        )
+
+        if participant:
+            participant.last_read_at = datetime.now(timezone.utc)
+
+        await db.execute(
+            update(Message)
+            .where(
+                Message.conversation_id == conversation_id,
+                Message.sender_id != user_id,
+                Message.read_at.is_(None),
+            )
+            .values(read_at=func.now())
+        )

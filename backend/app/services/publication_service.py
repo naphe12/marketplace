@@ -19,7 +19,7 @@ from app.services.listing_service import ListingService
 class PublicationService:
 
     @staticmethod
-    async def create_paid_publication(
+    async def create_publication_order(
         db: AsyncSession,
         listing_id: UUID,
         seller_id: UUID,
@@ -119,3 +119,17 @@ class PublicationService:
         await db.refresh(order)
 
         return publication, order
+
+    @staticmethod
+    async def create_paid_publication(
+        db: AsyncSession,
+        listing_id: UUID,
+        seller_id: UUID,
+        package_id: UUID,
+    ):
+        return await PublicationService.create_publication_order(
+            db,
+            listing_id,
+            seller_id,
+            package_id,
+        )

@@ -100,3 +100,14 @@ class StorageService:
                 return False
             raise
         return True
+
+    @staticmethod
+    def delete_object(object_key: str) -> None:
+        client = get_s3_client()
+
+        client.delete_object(
+            Bucket=settings.S3_BUCKET,
+            Key=object_key,
+        )
+
+    

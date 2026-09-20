@@ -27,6 +27,26 @@ from app.services.notification_service import (
 class ConversationService:
 
     @staticmethod
+    async def get_user_conversation(
+        db: AsyncSession,
+        conversation_id: UUID,
+        user_id: UUID,
+    ) -> Conversation:
+        conversation = await ConversationRepository.get_for_user_by_id(
+            db,
+            conversation_id,
+            user_id,
+        )
+
+        if not conversation:
+            raise HTTPException(
+                status_code=404,
+                detail="Conversation introuvable.",
+            )
+
+        return conversation
+
+    @staticmethod
     async def express_interest(
         db: AsyncSession,
         listing_id: UUID,
@@ -38,7 +58,7 @@ class ConversationService:
             listing_id,
         )
 
-        if not listing:
+        if not listing or listing.deleted_at is not None:
             raise HTTPException(
                 status_code=404,
                 detail="Annonce introuvable.",
@@ -64,6 +84,7 @@ class ConversationService:
                 db,
                 listing_id,
                 buyer_id,
+                listing.seller_id,
             )
         )
 
@@ -75,6 +96,8 @@ class ConversationService:
         conversation = Conversation(
             listing_id=listing.id,
             created_by_user_id=buyer_id,
+            buyer_id=buyer_id,
+            seller_id=listing.seller_id,
             status="ACTIVE",
             last_message_at=now,
         )
@@ -126,35 +149,11 @@ class ConversationService:
         content: str,
     ) -> Message:
 
-        conversation = (
-            await ConversationRepository.get_by_id(
-                db,
-                conversation_id,
-            )
+        conversation = await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            sender_id,
         )
-
-        if not conversation:
-            raise HTTPException(
-                status_code=404,
-                detail="Conversation introuvable.",
-            )
-
-        participant = (
-            await ConversationRepository.is_participant(
-                db,
-                conversation_id,
-                sender_id,
-            )
-        )
-
-        if not participant:
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    "Vous ne participez pas "
-                    "à cette conversation."
-                ),
-            )
 
         if conversation.status != "ACTIVE":
             raise HTTPException(
@@ -256,25 +255,36 @@ class ConversationService:
         user_id: UUID,
     ):
 
-        participant = (
-            await ConversationRepository.is_participant(
-                db,
-                conversation_id,
-                user_id,
-            )
+        await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            user_id,
         )
-
-        if not participant:
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    "Vous ne participez pas "
-                    "à cette conversation."
-                ),
-            )
 
         return await ConversationRepository.get_messages(
             db,
             conversation_id,
         )
-    
+
+    @staticmethod
+    async def mark_read(
+        db: AsyncSession,
+        conversation_id: UUID,
+        user_id: UUID,
+    ):
+        await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            user_id,
+        )
+
+        await ConversationRepository.mark_read(
+            db,
+            conversation_id,
+            user_id,
+        )
+        await db.commit()
+
+        return {
+            "ok": True,
+        }

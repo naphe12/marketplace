@@ -12,7 +12,13 @@ class InterestRequest(BaseModel):
 
 
 class MessageCreate(BaseModel):
-    content: str = Field(
+    body: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=3000,
+    )
+    content: str | None = Field(
+        default=None,
         min_length=1,
         max_length=5000,
     )
@@ -39,6 +45,8 @@ class ConversationResponse(BaseModel):
 
     listing_id: UUID
     created_by_user_id: UUID
+    buyer_id: UUID
+    seller_id: UUID
 
     status: str
 
@@ -52,4 +60,9 @@ class ConversationResponse(BaseModel):
 
 class InterestResponse(BaseModel):
     conversation: ConversationResponse
+    created: bool
+
+
+class InterestConversationResponse(BaseModel):
+    conversation_id: UUID
     created: bool

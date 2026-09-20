@@ -19,6 +19,17 @@ from sqlalchemy.orm import selectinload
 class ListingRepository:
 
     @staticmethod
+    def public_active_filters():
+        return (
+            Listing.status == "ACTIVE",
+            Listing.deleted_at.is_(None),
+            or_(
+                Listing.expires_at.is_(None),
+                Listing.expires_at > func.now(),
+            ),
+        )
+
+    @staticmethod
     async def create(
         db: AsyncSession,
         listing: Listing,
@@ -58,8 +69,7 @@ class ListingRepository:
 
         query = (
             select(Listing)
-            .where(Listing.status == "ACTIVE")
-            .where(Listing.deleted_at.is_(None))
+            .where(*ListingRepository.public_active_filters())
         )
 
         if category_id:
@@ -116,8 +126,7 @@ class ListingRepository:
         limit: int = 20,
     ):
         filters = [
-            Listing.status == "ACTIVE",
-            Listing.deleted_at.is_(None),
+            *ListingRepository.public_active_filters(),
         ]
 
         # ---------------------------------

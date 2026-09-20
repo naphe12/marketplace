@@ -354,6 +354,29 @@ class ListingService:
         return image
 
     @staticmethod
+    async def set_primary_image(
+        db: AsyncSession,
+        listing_id: UUID,
+        image_id: UUID,
+        seller_id: UUID,
+    ) -> ListingImage:
+        listing = await ListingService.get_owned(db, listing_id, seller_id)
+        ListingService.ensure_images_editable(listing)
+        selected_image = next(
+            (item for item in listing.images if item.id == image_id),
+            None,
+        )
+        if selected_image is None:
+            raise HTTPException(404, "Photo introuvable dans cette annonce.")
+
+        for image in listing.images:
+            image.is_primary = image.id == image_id
+
+        await db.commit()
+        await db.refresh(selected_image)
+        return selected_image
+
+    @staticmethod
     async def delete_image(
         db: AsyncSession, listing_id: UUID, image_id: UUID, seller_id: UUID,
     ):
@@ -367,5 +390,19 @@ class ListingService:
             for item in remaining:
                 item.is_primary = False
             min(remaining, key=lambda item: item.position).is_primary = True
+        object_key = image.object_key
+        thumbnail_key = image.thumbnail_object_key
         await db.delete(image)
         await db.commit()
+
+        if object_key:
+            try:
+                StorageService.delete_object(object_key)
+            except Exception:
+                pass
+
+        if thumbnail_key:
+            try:
+                StorageService.delete_object(thumbnail_key)
+            except Exception:
+                pass

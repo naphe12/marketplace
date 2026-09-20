@@ -19,8 +19,9 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint(
             "listing_id",
-            "created_by_user_id",
-            name="uq_conversation_listing_buyer",
+            "buyer_id",
+            "seller_id",
+            name="uq_conversation_listing_buyer_seller",
         ),
     )
 
@@ -36,9 +37,22 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
         index=True,
     )
 
+    buyer_id: Mapped[UUID] = mapped_column(
+        ForeignKey("market.users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    seller_id: Mapped[UUID] = mapped_column(
+        ForeignKey("market.users.id"),
+        nullable=False,
+        index=True,
+    )
+
     status: Mapped[str] = mapped_column(
         String(20),
         default="ACTIVE",
+        server_default="ACTIVE",
         nullable=False,
     )
 

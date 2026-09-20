@@ -5,6 +5,7 @@ from app.schemas.listing import ListingImageUpdate
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -21,6 +22,7 @@ from app.schemas.listing import (
     ListingResponse,
     ListingUpdate,
 )
+from app.schemas.listing_image import ImageReorderRequest
 from app.services.listing_service import ListingService
 
 from decimal import Decimal
@@ -39,6 +41,10 @@ from app.services.storage_service import (
     StorageService,
 )
 from app.models.listing import ListingImage
+from app.models.listing import Listing
+from app.services.listing_publication_service import (
+    publish_listing as publish_listing_decision,
+)
 
 
 router = APIRouter(
@@ -159,10 +165,23 @@ async def publish_listing(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return await ListingService.publish(
-        db,
-        listing_id,
-        current_user.id,
+    listing = await db.scalar(
+        select(Listing).where(
+            Listing.id == listing_id,
+            Listing.seller_id == current_user.id,
+            Listing.deleted_at.is_(None),
+        )
+    )
+
+    if not listing:
+        raise HTTPException(
+            status_code=404,
+            detail="Annonce introuvable.",
+        )
+
+    return await publish_listing_decision(
+        db=db,
+        listing=listing,
     )
 
 @router.get(
@@ -267,6 +286,94 @@ async def update_listing_image(
     return await serialize_listing_image(image)
 
 
+@router.patch(
+    "/{listing_id}/images/{image_id}/primary",
+    response_model=ListingImageResponse,
+)
+async def set_primary_listing_image(
+    listing_id: UUID,
+    image_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    image = await ListingService.set_primary_image(
+        db,
+        listing_id,
+        image_id,
+        current_user.id,
+    )
+    return await serialize_listing_image(image)
+
+
+@router.put(
+    "/{listing_id}/images/reorder",
+)
+async def reorder_listing_images(
+    listing_id: UUID,
+    payload: ImageReorderRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing = await ListingRepository.get_by_id(
+        db,
+        listing_id,
+    )
+
+    if not listing:
+        raise HTTPException(
+            status_code=404,
+            detail="Annonce introuvable.",
+        )
+
+    if listing.seller_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Accès interdit.",
+        )
+
+    ListingService.ensure_images_editable(listing)
+
+    images = (
+        await db.scalars(
+            select(ListingImage).where(
+                ListingImage.listing_id == listing_id,
+            )
+        )
+    ).all()
+
+    current_ids = {
+        image.id
+        for image in images
+    }
+    requested_ids = set(payload.image_ids)
+
+    if current_ids != requested_ids:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "La liste des images ne correspond pas "
+                "aux images de l'annonce."
+            ),
+        )
+
+    images_by_id = {
+        image.id: image
+        for image in images
+    }
+
+    for index, image_id in enumerate(payload.image_ids):
+        images_by_id[image_id].position = index
+
+    await db.commit()
+
+    return {
+        "image_ids": [
+            str(image_id)
+            for image_id in payload.image_ids
+        ],
+    }
+
+
 @router.delete("/{listing_id}/images/{image_id}", status_code=204)
 async def delete_listing_image(
     listing_id: UUID, image_id: UUID,
@@ -303,8 +410,22 @@ async def prepare_image_upload(
         )
 
     ListingService.ensure_images_editable(listing)
-    if len(listing.images) >= 8:
-        raise HTTPException(400, "Vous pouvez ajouter au maximum 8 photos.")
+    image_count = await db.scalar(
+        select(
+            func.count(ListingImage.id)
+        ).where(
+            ListingImage.listing_id == listing_id
+        )
+    )
+
+    if image_count and image_count >= 8:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Une annonce peut contenir au maximum "
+                "8 photos."
+            ),
+        )
 
     return (
         StorageService.prepare_listing_image_upload(
@@ -340,8 +461,23 @@ async def confirm_image_upload(
         )
 
     ListingService.ensure_images_editable(listing)
-    if len(listing.images) >= 8:
-        raise HTTPException(400, "Vous pouvez ajouter au maximum 8 photos.")
+    image_count = await db.scalar(
+        select(
+            func.count(ListingImage.id)
+        ).where(
+            ListingImage.listing_id == listing_id
+        )
+    )
+    image_count = image_count or 0
+
+    if image_count >= 8:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Une annonce peut contenir au maximum "
+                "8 photos."
+            ),
+        )
 
     expected_prefix = (
         f"listings/{listing_id}/"
@@ -363,10 +499,6 @@ async def confirm_image_upload(
             "La photo n'a pas été trouvée.",
         )
 
-    if payload.is_primary:
-        for existing in listing.images:
-            existing.is_primary = False
-
     image_id = uuid4()
     image = ListingImage(
         id=image_id,
@@ -375,8 +507,8 @@ async def confirm_image_upload(
         object_key=payload.object_key,
         mime_type=payload.content_type,
         file_size=payload.size_bytes,
-        position=payload.position,
-        is_primary=payload.is_primary,
+        position=image_count,
+        is_primary=image_count == 0,
     )
 
     db.add(image)

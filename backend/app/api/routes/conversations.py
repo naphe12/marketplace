@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -11,7 +11,7 @@ from app.repositories.conversation_repository import (
 from app.schemas.conversation import (
     ConversationResponse,
     InterestRequest,
-    InterestResponse,
+    InterestConversationResponse,
     MessageCreate,
     MessageResponse,
 )
@@ -27,11 +27,11 @@ router = APIRouter(
 
 @router.post(
     "/listings/{listing_id}/interest",
-    response_model=InterestResponse,
+    response_model=InterestConversationResponse,
 )
 async def express_interest(
     listing_id: UUID,
-    data: InterestRequest,
+    data: InterestRequest | None = None,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -40,12 +40,12 @@ async def express_interest(
             db,
             listing_id,
             current_user.id,
-            data.message,
+            data.message if data else None,
         )
     )
 
     return {
-        "conversation": conversation,
+        "conversation_id": conversation.id,
         "created": created,
     }
 
@@ -60,6 +60,22 @@ async def my_conversations(
 ):
     return await ConversationRepository.get_for_user(
         db,
+        current_user.id,
+    )
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+)
+async def conversation_detail(
+    conversation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.get_user_conversation(
+        db,
+        conversation_id,
         current_user.id,
     )
 
@@ -91,9 +107,31 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    content = data.body or data.content
+    if not content:
+        raise HTTPException(
+            status_code=422,
+            detail="Le message est obligatoire.",
+        )
+
     return await ConversationService.send_message(
         db,
         conversation_id,
         current_user.id,
-        data.content,
+        content,
+    )
+
+
+@router.post(
+    "/conversations/{conversation_id}/read",
+)
+async def mark_conversation_read(
+    conversation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.mark_read(
+        db,
+        conversation_id,
+        current_user.id,
     )

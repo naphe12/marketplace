@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import PhotoUploader from "../components/publish/PhotoUploader";
@@ -8,6 +8,7 @@ import type { ListingDetail } from "../types/listing";
 
 export default function ListingDetailPage() {
   const { listingId } = useParams();
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -16,6 +17,7 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [interestLoading, setInterestLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,6 +57,38 @@ export default function ListingDetailPage() {
     NEW: "Neuf", USED: "Occasion", REFURBISHED: "Reconditionné",
   };
 
+  async function handleInterest() {
+    if (!listing) {
+      return;
+    }
+
+    setInterestLoading(true);
+    setError(null);
+
+    try {
+      const result = await apiRequest<{
+        conversation_id: string;
+        created: boolean;
+      }>(
+        `/listings/${listing.id}/interest`,
+        {
+          method: "POST",
+          authenticated: true,
+        },
+      );
+
+      navigate(`/messages/${result.conversation_id}`);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de contacter le vendeur.",
+      );
+    } finally {
+      setInterestLoading(false);
+    }
+  }
+
   return (
     <div className="page listing-detail">
       <Link to="/" className="listing-detail__back">← Retour aux annonces</Link>
@@ -85,7 +119,18 @@ export default function ListingDetailPage() {
               }}>
               {editing ? "Modification en cours" : "Modifier l’annonce"}
             </button>
-          ) : <p>Seul le compte ayant publié cette annonce peut la modifier.</p>}
+          ) : (
+            <button
+              type="button"
+              className="primary-button"
+              disabled={interestLoading}
+              onClick={() => void handleInterest()}
+            >
+              {interestLoading
+                ? "Ouverture..."
+                : "Je suis intéressé"}
+            </button>
+          )}
         </div>
       )}
       {!loading && listing && (

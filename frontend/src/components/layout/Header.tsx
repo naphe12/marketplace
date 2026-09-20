@@ -1,6 +1,8 @@
 import {
   Bell,
+  ChevronRight,
   Heart,
+  Plus,
   Search,
 } from "lucide-react";
 
@@ -23,7 +25,8 @@ export default function Header() {
     <header className="app-header">
       <div className="mobile-brand">
         <Link to="/">
-          MarketBI
+          <span className="brand-mark">M</span>
+          <span>MarketBI</span>
         </Link>
       </div>
 
@@ -37,11 +40,19 @@ export default function Header() {
         <Search size={19} />
 
         <span>
-          Que recherchez-vous ?
+          Rechercher un produit, une ville, une marque...
         </span>
       </button>
 
       <div className="header-actions">
+        <Link
+          to="/publish"
+          className="header-publish desktop-only"
+        >
+          <Plus size={18} />
+          <span>Publier</span>
+        </Link>
+
         <Link
           to="/favorites"
           className="header-icon desktop-only"
@@ -76,7 +87,7 @@ export default function Header() {
               : "?"}
           </div>
 
-          <div>
+          <div className="desktop-profile__meta">
             <strong>
               {user
                 ? "Mon compte"
@@ -89,6 +100,8 @@ export default function Header() {
                 : "Se connecter"}
             </span>
           </div>
+
+          <ChevronRight size={16} />
         </Link>
       </div>
     </header>

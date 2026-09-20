@@ -1,10 +1,12 @@
 import {
+  AlertTriangle,
   CreditCard,
   FileCheck,
   Flag,
   ListChecks,
   Settings,
   ShieldAlert,
+  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -13,6 +15,10 @@ import {
   useEffect,
   useState,
 } from "react";
+
+import {
+  Link,
+} from "react-router-dom";
 
 import {
   apiRequest,
@@ -140,19 +146,61 @@ export default function DashboardPage() {
     },
   ];
 
+  const moderationTotal = dashboard
+    ? dashboard.moderation.reports_pending +
+      dashboard.moderation.fraud_signals_open +
+      dashboard.moderation.verifications_pending
+    : 0;
+
 
   return (
     <section className="admin-page">
       <div className="admin-page-heading">
         <div>
-          <span>Vue d'ensemble</span>
+          <span>Vue d'ensemble opérationnelle</span>
           <h1>Dashboard</h1>
           <p>
-            Suivez utilisateurs, annonces, ventes,
-            signalements, paiements et tendances.
+            Pilotez utilisateurs, annonces, vérifications,
+            signalements, anti-fraude et paiements depuis une
+            seule vue.
           </p>
         </div>
+
+        <div className="admin-dashboard-health">
+          <Sparkles size={18} />
+          <div>
+            <strong>
+              {loading
+                ? "Synchronisation..."
+                : error
+                  ? "Attention requise"
+                  : "Système actif"}
+            </strong>
+            <span>
+              {error || `${moderationTotal} dossier(s) à suivre`}
+            </span>
+          </div>
+        </div>
       </div>
+
+      {moderationTotal > 0 && (
+        <section className="admin-command-strip">
+          <div>
+            <AlertTriangle size={20} />
+            <div>
+              <strong>Priorité modération</strong>
+              <span>
+                {moderationTotal} élément(s) attendent une décision
+                admin.
+              </span>
+            </div>
+          </div>
+
+          <Link to="/admin/reports">
+            Traiter les signalements
+          </Link>
+        </section>
+      )}
 
       <div className="admin-stats-grid">
         <StatCard
@@ -164,6 +212,11 @@ export default function DashboardPage() {
           }
           detail="Comptes et activité"
           icon={Users}
+          trend={
+            dashboard
+              ? `+${dashboard.users.new_today} aujourd'hui`
+              : undefined
+          }
         />
 
         <StatCard
@@ -175,6 +228,12 @@ export default function DashboardPage() {
           }
           detail="Inventaire marketplace"
           icon={ListChecks}
+          tone="success"
+          trend={
+            dashboard
+              ? `${formatNumber(dashboard.listings.total)} total`
+              : undefined
+          }
         />
 
         <StatCard
@@ -186,6 +245,11 @@ export default function DashboardPage() {
           }
           detail="Transactions réalisées"
           icon={TrendingUp}
+          trend={
+            dashboard
+              ? `${formatNumber(dashboard.transactions.completed)} complétées`
+              : undefined
+          }
         />
 
         <StatCard
@@ -199,6 +263,7 @@ export default function DashboardPage() {
           }
           detail="Commandes et règlements"
           icon={CreditCard}
+          tone="success"
         />
 
         <StatCard
@@ -210,6 +275,7 @@ export default function DashboardPage() {
           }
           detail="Dossiers en attente"
           icon={Flag}
+          tone="warning"
         />
 
         <StatCard
@@ -221,6 +287,7 @@ export default function DashboardPage() {
           }
           detail="Signaux ouverts"
           icon={ShieldAlert}
+          tone="danger"
         />
 
         <StatCard
@@ -232,6 +299,7 @@ export default function DashboardPage() {
           }
           detail="Demandes à revoir"
           icon={FileCheck}
+          tone="warning"
         />
 
         <StatCard
@@ -244,9 +312,14 @@ export default function DashboardPage() {
         />
       </div>
 
-      <section className="admin-panel">
+      <section className="admin-panel admin-dashboard-panel">
         <div className="admin-panel-heading">
-          <h2>Tendances à surveiller</h2>
+          <div>
+            <h2>Tendances à surveiller</h2>
+            <p>
+              Volumes principaux pour prioriser la journée.
+            </p>
+          </div>
 
           {loading && (
             <span>Chargement...</span>

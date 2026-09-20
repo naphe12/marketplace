@@ -1,4 +1,6 @@
 import {
+  CircleDollarSign,
+  Sparkles,
   ShieldCheck,
 } from "lucide-react";
 
@@ -28,6 +30,15 @@ export default function Sidebar() {
         <div className="sidebar-brand-text">
           <strong>MarketBI</strong>
           <span>Marketplace</span>
+        </div>
+      </div>
+
+      <div className="sidebar-insight">
+        <Sparkles size={18} />
+
+        <div>
+          <strong>Marketplace locale</strong>
+          <span>Acheter, vendre et discuter au Burundi.</span>
         </div>
       </div>
 
@@ -73,6 +84,14 @@ export default function Sidebar() {
           <span>Administration</span>
         </NavLink>
       )}
+
+      <div className="sidebar-promo">
+        <CircleDollarSign size={20} />
+        <div>
+          <strong>Publication rapide</strong>
+          <span>Créez une annonce en quelques étapes.</span>
+        </div>
+      </div>
 
       <div className="sidebar-footer">
         <div className="sidebar-avatar">
