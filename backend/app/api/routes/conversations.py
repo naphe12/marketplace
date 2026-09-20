@@ -159,7 +159,7 @@ async def create_offer(
         buyer=current_user,
         amount=payload.amount,
     )
-@router.get("/{conversation_id}/offers")
+@router.get("/conversations/{conversation_id}/offers")
 async def list_conversation_offers(
     conversation_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -192,72 +192,6 @@ async def list_conversation_offers(
             "currency": offer.currency,
             "status": offer.status,
             "responded_at": offer.responded_at,
-            "created_at": offer.created_at,
-        }
-        for offer in offers
-    ]
-@router.get("/{conversation_id}/offers")
-async def get_conversation_offers(
-    conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    # Vérifie que l'utilisateur appartient bien
-    # à cette conversation
-    conversation = await get_user_conversation(
-        db,
-        conversation_id,
-        current_user.id,
-    )
-
-    result = await db.execute(
-        select(Offer)
-        .where(
-            Offer.conversation_id == conversation.id
-        )
-        .order_by(
-            Offer.created_at.asc()
-        )
-    )
-
-    offers = result.scalars().all()
-
-    return [
-        {
-            "id": str(offer.id),
-
-            "conversation_id": (
-                str(offer.conversation_id)
-                if offer.conversation_id
-                else None
-            ),
-
-            "listing_id": str(
-                offer.listing_id
-            ),
-
-            "buyer_id": str(
-                offer.buyer_id
-            ),
-
-            "seller_id": str(
-                offer.seller_id
-            ),
-
-            "amount": str(
-                offer.amount
-            ),
-
-            "currency": offer.currency,
-
-            "status": offer.status,
-
-            "responded_at": (
-                offer.responded_at
-                if offer.responded_at
-                else None
-            ),
-
             "created_at": offer.created_at,
         }
         for offer in offers

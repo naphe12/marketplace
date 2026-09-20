@@ -40,3 +40,5 @@ api_router.include_router(favorites_router)
 api_router.include_router(locations_router)
 api_router.include_router(reviews_router)
 api_router.include_router(images_router)
+
+
