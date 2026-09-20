@@ -7,8 +7,8 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     String,
-    Text,
 )
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -18,7 +18,7 @@ class Offer(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "offers"
 
     conversation_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey(
             "market.conversations.id",
             ondelete="CASCADE",
@@ -27,7 +27,7 @@ class Offer(UUIDMixin, TimestampMixin, Base):
     )
 
     listing_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey(
             "market.listings.id",
             ondelete="CASCADE",
@@ -36,7 +36,7 @@ class Offer(UUIDMixin, TimestampMixin, Base):
     )
 
     buyer_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey(
             "market.users.id",
         ),
@@ -44,7 +44,7 @@ class Offer(UUIDMixin, TimestampMixin, Base):
     )
 
     seller_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey(
             "market.users.id",
         ),

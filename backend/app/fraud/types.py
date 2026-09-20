@@ -7,6 +7,8 @@ class FraudReason:
     code: str
     score: float
     description: str
+    category: str = "GENERAL"
+    severity: str = "LOW"
 
 
 @dataclass

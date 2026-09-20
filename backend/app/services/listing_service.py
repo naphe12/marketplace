@@ -190,22 +190,40 @@ class ListingService:
         ListingService.ensure_images_editable(listing)
 
         image_id = uuid4()
-        image_url = data.image_url
-        if data.storage_key:
-            prefix = f"listings/{listing.id}/"
-            if (
-                not data.storage_key.startswith(prefix)
-                or len(data.storage_key) <= len(prefix)
-                or ".." in data.storage_key.split("/")
-                or "\\" in data.storage_key
-            ):
-                raise HTTPException(400, "Chemin de stockage invalide pour cette annonce.")
-            if data.image_url or data.thumbnail_url:
-                raise HTTPException(400, "Utilisez storage_key seul pour une image du bucket.")
-            await StorageService.check_image(data.storage_key)
-            image_url = f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/images/{image_id}"
-        elif not image_url or not image_url.startswith(("https://", "http://")):
-            raise HTTPException(400, "Fournissez storage_key ou une URL HTTP valide.")
+        if not data.storage_key:
+            raise HTTPException(
+                400,
+                "Utilisez le flux S3 et fournissez storage_key.",
+            )
+
+        prefix = f"listings/{listing.id}/"
+        if (
+            not data.storage_key.startswith(prefix)
+            or len(data.storage_key) <= len(prefix)
+            or ".." in data.storage_key.split("/")
+            or "\\" in data.storage_key
+        ):
+            raise HTTPException(
+                400,
+                "Chemin de stockage invalide pour cette annonce.",
+            )
+
+        if data.image_url or data.thumbnail_url:
+            raise HTTPException(
+                400,
+                "Utilisez storage_key seul pour une image du bucket.",
+            )
+
+        if not await StorageService.object_exists(data.storage_key):
+            raise HTTPException(
+                400,
+                "La photo n'a pas ete trouvee.",
+            )
+
+        image_url = (
+            f"{settings.PUBLIC_API_URL.rstrip('/')}"
+            f"/api/v1/images/{image_id}"
+        )
 
         if data.is_primary:
             for image in listing.images:
@@ -213,10 +231,9 @@ class ListingService:
 
         image = ListingImage(
             id=image_id,
-            storage_key=data.storage_key,
+            object_key=data.storage_key,
             listing_id=listing.id,
             image_url=image_url,
-            thumbnail_url=data.thumbnail_url,
             position=data.position,
             is_primary=data.is_primary,
         )
