@@ -42,10 +42,12 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         index=True,
     )
 
+    # Python: notification_type
+    # PostgreSQL: type
     notification_type: Mapped[str] = mapped_column(
+        "type",
         String(50),
         nullable=False,
-        index=True,
     )
 
     title: Mapped[str] = mapped_column(
@@ -53,15 +55,15 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    message: Mapped[str] = mapped_column(
+     # Python: message
+    # PostgreSQL: body
+    message: Mapped[str | None] = mapped_column(
+        "body",
         Text,
-        nullable=False,
-    )
-
-    data: Mapped[dict | None] = mapped_column(
-        JSON,
         nullable=True,
     )
+
+    
 
     channel: Mapped[str] = mapped_column(
         String(20),
@@ -76,12 +78,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         index=True,
     )
 
-    is_read: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False,
-        index=True,
-    )
+    
 
     read_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
