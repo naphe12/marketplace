@@ -50,7 +50,7 @@ from app.core.database import get_db
 from app.models.listing import Listing
 from app.models.transaction import Transaction
 from app.models.user import User
-from backend.app.services.listing_publication_service import utcnow
+from app.services.listing_publication_service import utcnow
 
 
 router = APIRouter(
