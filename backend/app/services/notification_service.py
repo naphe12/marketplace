@@ -34,8 +34,7 @@ class NotificationService:
                     user_id=user_id,
                     notification_type=notification_type.upper(),
                     title=title,
-                    message=message,
-                    data=data,
+                    message=message,                    
                     channel="IN_APP",
                     status="SENT",
                     sent_at=datetime.now(timezone.utc),
@@ -71,9 +70,7 @@ class NotificationService:
             ),
 
             title=title,
-            message=message,
-
-            data=data,
+            message=message,           
 
             channel="IN_APP",
 
@@ -149,8 +146,8 @@ class NotificationService:
                 Notification.is_read.is_(False),
             )
             .values(
-                is_read=True,
-                read_at=now,
+                
+                read_at=datetime.now(timezone.utc),
             )
         )
 
