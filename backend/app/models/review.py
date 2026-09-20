@@ -6,7 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    Text,
+    Text, String,
     UniqueConstraint,
     func,
 )
@@ -68,6 +68,13 @@ class Review(Base):
     comment: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="PUBLISHED",
+        server_default="PUBLISHED",
     )
 
     created_at: Mapped[datetime] = mapped_column(

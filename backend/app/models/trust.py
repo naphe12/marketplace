@@ -50,52 +50,6 @@ class TransactionStatusHistory(UUIDMixin, Base):
     )
 
 
-class Review(UUIDMixin, TimestampMixin, Base):
-    __tablename__ = "reviews"
-
-    __table_args__ = (
-        UniqueConstraint(
-            "transaction_id",
-            "reviewer_id",
-            name="uq_review_transaction_reviewer",
-        ),
-    )
-
-    transaction_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.transactions.id"),
-        nullable=False,
-        index=True,
-    )
-
-    reviewer_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
-        nullable=False,
-        index=True,
-    )
-
-    reviewed_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
-        nullable=False,
-        index=True,
-    )
-
-    rating: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    comment: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
-    status: Mapped[str] = mapped_column(
-        String(20),
-        default="PUBLISHED",
-        nullable=False,
-    )
-
-
 class TrustEvent(UUIDMixin, Base):
     __tablename__ = "trust_events"
 
