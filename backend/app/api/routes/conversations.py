@@ -202,6 +202,8 @@ async def get_conversation_offers(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Vérifie que l'utilisateur appartient bien
+    # à cette conversation
     conversation = await get_user_conversation(
         db,
         conversation_id,
@@ -223,28 +225,39 @@ async def get_conversation_offers(
     return [
         {
             "id": str(offer.id),
-            "conversation_id": str(
-                offer.conversation_id
+
+            "conversation_id": (
+                str(offer.conversation_id)
+                if offer.conversation_id
+                else None
             ),
+
             "listing_id": str(
                 offer.listing_id
             ),
+
             "buyer_id": str(
                 offer.buyer_id
             ),
+
             "seller_id": str(
                 offer.seller_id
             ),
+
             "amount": str(
                 offer.amount
             ),
+
             "currency": offer.currency,
+
             "status": offer.status,
+
             "responded_at": (
                 offer.responded_at
                 if offer.responded_at
                 else None
             ),
+
             "created_at": offer.created_at,
         }
         for offer in offers
