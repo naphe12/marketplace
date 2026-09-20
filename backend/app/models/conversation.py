@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import (
@@ -73,36 +73,29 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
     )
 
 
-class ConversationParticipant(UUIDMixin, Base):
+class ConversationParticipant(UUIDMixin,Base):
     __tablename__ = "conversation_participants"
-
-    __table_args__ = (
-        UniqueConstraint(
-            "conversation_id",
-            "user_id",
-            name="uq_conversation_participant",
-        ),
-    )
 
     conversation_id: Mapped[UUID] = mapped_column(
         ForeignKey(
             "market.conversations.id",
             ondelete="CASCADE",
         ),
-        nullable=False,
-        index=True,
+        primary_key=True,
     )
 
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
-        nullable=False,
-        index=True,
+        ForeignKey(
+            "market.users.id",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
     )
 
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
         nullable=False,
+        default=lambda: datetime.now(timezone.utc),
     )
 
     last_read_at: Mapped[datetime | None] = mapped_column(
@@ -113,7 +106,6 @@ class ConversationParticipant(UUIDMixin, Base):
     conversation: Mapped["Conversation"] = relationship(
         back_populates="participants",
     )
-
 
 class Message(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "messages"
