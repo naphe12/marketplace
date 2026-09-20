@@ -194,15 +194,21 @@ class UserBlock(TimestampMixin, Base):
     )
 
     blocker_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
+        ForeignKey(
+            "market.users.id",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
         nullable=False,
-        index=True,
     )
 
     blocked_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
+        ForeignKey(
+            "market.users.id",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
         nullable=False,
-        index=True,
     )
 
     active: Mapped[bool] = mapped_column(
