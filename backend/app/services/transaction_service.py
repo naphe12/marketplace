@@ -6,10 +6,12 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.trust import (
-    Review,
+    
     TransactionStatusHistory,
     TrustEvent,
 )
+
+from app.models.review import Review
 from app.repositories.listing_repository import (
     ListingRepository,
 )

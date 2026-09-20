@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.transaction import Transaction
 from app.models.trust import (
     ReputationProfile,
-    Review,
+    
 )
+
+from app.models.review import Review
 
 
 class ReputationRepository:
