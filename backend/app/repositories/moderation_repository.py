@@ -9,6 +9,11 @@ from app.models.moderation import (
     UserBlock,
 )
 
+from sqlalchemy import and_, exists, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.moderation import UserBlock
+
 
 class ModerationRepository:
 
@@ -60,24 +65,26 @@ class ModerationRepository:
     @staticmethod
     async def is_blocked(
         db: AsyncSession,
-        blocker_id: UUID,
-        blocked_id: UUID,
+        user_a_id,
+        user_b_id,
     ) -> bool:
 
-        result = await db.execute(
-            select(UserBlock.id)
-            .where(
-                UserBlock.blocker_user_id
-                == blocker_id,
-
-                UserBlock.blocked_user_id
-                == blocked_id,
-
-                UserBlock.active.is_(True),
+        stmt = select(
+            exists().where(
+                and_(
+                    UserBlock.active.is_(True),
+                    or_(
+                        and_(
+                            UserBlock.blocker_user_id == user_a_id,
+                            UserBlock.blocked_user_id == user_b_id,
+                        ),
+                        and_(
+                            UserBlock.blocker_user_id == user_b_id,
+                            UserBlock.blocked_user_id == user_a_id,
+                        ),
+                    ),
+                )
             )
         )
 
-        return (
-            result.scalar_one_or_none()
-            is not None
-        )
+        return bool(await db.scalar(stmt))
