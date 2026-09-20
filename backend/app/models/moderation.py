@@ -185,15 +185,8 @@ class ModerationAction(UUIDMixin, TimestampMixin, Base):
 class UserBlock(TimestampMixin, Base):
     __tablename__ = "user_blocks"
 
-    __table_args__ = (
-        UniqueConstraint(
-            "blocker_user_id",
-            "blocked_user_id",
-            name="uq_user_block",
-        ),
-    )
-
     blocker_user_id: Mapped[UUID] = mapped_column(
+        "blocker_id",
         ForeignKey(
             "market.users.id",
             ondelete="CASCADE",
@@ -203,6 +196,7 @@ class UserBlock(TimestampMixin, Base):
     )
 
     blocked_user_id: Mapped[UUID] = mapped_column(
+        "blocked_id",
         ForeignKey(
             "market.users.id",
             ondelete="CASCADE",
@@ -211,8 +205,14 @@ class UserBlock(TimestampMixin, Base):
         nullable=False,
     )
 
+    reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
     active: Mapped[bool] = mapped_column(
         Boolean,
-        default=True,
         nullable=False,
+        default=True,
+        server_default="true",
     )
