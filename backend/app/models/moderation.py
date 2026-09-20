@@ -182,7 +182,7 @@ class ModerationAction(UUIDMixin, TimestampMixin, Base):
     )
 
 
-class UserBlock(UUIDMixin, TimestampMixin, Base):
+class UserBlock(TimestampMixin, Base):
     __tablename__ = "user_blocks"
 
     __table_args__ = (
