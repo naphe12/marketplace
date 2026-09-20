@@ -16,6 +16,9 @@ from app.api.routes.moderation import (    router as moderation_router,)
 from app.api.routes.notifications import (    router as notifications_router,)
 from app.api.routes.favorites import (    router as favorites_router,)
 from app.api.routes.locations import (    router as locations_router,)
+from app.api.routes.offers import offers_router
+
+from app.api.routes.transactions import transactions_router
 
 api_router = APIRouter()
 
@@ -35,6 +38,8 @@ api_router.include_router(    moderation_router)
 api_router.include_router(    notifications_router)
 api_router.include_router(    favorites_router)
 api_router.include_router(    locations_router)
+api_router.include_router(    offers_router,)
+api_router.include_router(    transactions_router,)
 
 from app.api.routes.images import router as images_router
 api_router.include_router(images_router)

@@ -16,6 +16,20 @@ from app.repositories.verification_repository import (
     VerificationRepository,
 )
 
+from uuid import UUID
+
+from sqlalchemy import (
+    func,
+    select,
+)
+
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+)
+
+from app.models.review import Review
+from app.models.transaction import Transaction
+
 
 class ReputationService:
 
@@ -253,3 +267,73 @@ class ReputationService:
         await db.refresh(profile)
 
         return profile
+
+    async def get_user_reputation(    db: AsyncSession,    user_id: UUID,) -> dict:
+        review_stats = (
+            await db.execute(
+                select(
+                    func.count(
+                        Review.id
+                    ),
+                    func.avg(
+                        Review.rating
+                    ),
+                ).where(
+                    Review.reviewed_user_id
+                    == user_id
+                )
+            )
+        ).one()
+
+        reviews_count = (
+            review_stats[0] or 0
+        )
+
+        average_rating = (
+            float(review_stats[1])
+            if review_stats[1]
+            is not None
+            else None
+        )
+
+        completed_transactions = (
+            await db.scalar(
+                select(
+                    func.count(
+                        Transaction.id
+                    )
+                ).where(
+                    Transaction.status
+                        == "COMPLETED",
+
+                    (
+                        (
+                            Transaction.seller_id
+                            == user_id
+                        )
+                        |
+                        (
+                            Transaction.buyer_id
+                            == user_id
+                        )
+                    ),
+                )
+            )
+        ) or 0
+
+        return {
+            "average_rating":
+                round(
+                    average_rating,
+                    2,
+                )
+                if average_rating
+                is not None
+                else None,
+
+            "reviews_count":
+                reviews_count,
+
+            "completed_transactions":
+                completed_transactions,
+        }

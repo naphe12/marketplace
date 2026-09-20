@@ -1,3 +1,12 @@
+import type {
+  FraudAction,
+  FraudLabel,
+  FraudReason,
+  FraudRiskLevel,
+  FraudSource,
+} from "../types/fraud";
+
+
 export type AdminDashboard = {
   users: {
     total: number;
@@ -141,15 +150,67 @@ export type AdminReport = {
   created_at: string;
 };
 
+
+
+
 export type AdminFraudSignal = {
   id: string;
+
   user_id: string | null;
   listing_id: string | null;
+
   signal_type: string;
-  risk_score: string;
+
+  risk_score:
+    | string
+    | number
+    | null;
+
   severity: string;
   status: string;
-  signal_data: Record<string, unknown> | null;
+
+  // Ancien champ existant
+  signal_data:
+    | Record<string, unknown>
+    | null;
+
+  // Fraud Engine v1
+  risk_level?:
+    | FraudRiskLevel
+    | null;
+
+  source?:
+    | FraudSource
+    | null;
+
+  action?:
+    | FraudAction
+    | null;
+
+  model_version?:
+    | string
+    | null;
+
+  features?:
+    | Record<string, unknown>
+    | null;
+
+  reasons?:
+    | FraudReason[]
+    | null;
+
+  admin_label?:
+    | FraudLabel
+    | null;
+
+  reviewed_by_user_id?:
+    | string
+    | null;
+
+  reviewed_at?:
+    | string
+    | null;
+
   created_at: string;
 };
 

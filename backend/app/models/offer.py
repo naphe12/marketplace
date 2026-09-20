@@ -17,61 +17,55 @@ from app.models.base import Base, TimestampMixin, UUIDMixin
 class Offer(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "offers"
 
-    listing_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.listings.id"),
+    conversation_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "market.conversations.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
-        index=True,
+    )
+
+    listing_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "market.listings.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
     )
 
     buyer_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
+        UUID(as_uuid=True),
+        ForeignKey(
+            "market.users.id",
+        ),
         nullable=False,
-        index=True,
     )
 
     seller_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
+        UUID(as_uuid=True),
+        ForeignKey(
+            "market.users.id",
+        ),
         nullable=False,
-        index=True,
-    )
-
-    created_by_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("market.users.id"),
-        nullable=False,
-    )
-
-    parent_offer_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("market.offers.id"),
-        nullable=True,
-        index=True,
     )
 
     amount: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2),
+        Numeric(14, 2),
         nullable=False,
     )
 
     currency: Mapped[str] = mapped_column(
         String(3),
-        default="BIF",
         nullable=False,
-    )
-
-    message: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
     )
 
     status: Mapped[str] = mapped_column(
-        String(30),
-        default="PENDING",
+        String(20),
         nullable=False,
-        index=True,
-    )
-
-    expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
+        default="PENDING",
+        server_default="PENDING",
     )
 
     responded_at: Mapped[datetime | None] = mapped_column(

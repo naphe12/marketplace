@@ -15,6 +15,9 @@ from app.services.reputation_service import (
     ReputationService,
 )
 
+from app.services.reputation_service import get_user_reputation
+    
+
 
 router = APIRouter(
     prefix="/reputation",
@@ -55,6 +58,18 @@ async def user_reputation(
         return profile
 
     return await ReputationService.recompute(
+        db,
+        user_id,
+    )
+
+@router.get(
+    "/{user_id}/reputation",
+)
+async def user_reputation(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_user_reputation(
         db,
         user_id,
     )
