@@ -31,17 +31,17 @@ import {
 
 type TimelineItem =
   | {
-      type: "MESSAGE";
-      id: string;
-      created_at: string;
-      message: Message;
-    }
+    type: "MESSAGE";
+    id: string;
+    created_at: string;
+    message: Message;
+  }
   | {
-      type: "OFFER";
-      id: string;
-      created_at: string;
-      offer: ConversationOffer;
-    };
+    type: "OFFER";
+    id: string;
+    created_at: string;
+    offer: ConversationOffer;
+  };
 
 
 export default function ConversationPage() {
@@ -69,8 +69,10 @@ export default function ConversationPage() {
   const [error, setError] =
     useState("");
 
-  const [offerActionLoading, setOfferActionLoading] =
-    useState<string | null>(null);
+  const [
+    offerActionLoading,
+    setOfferActionLoading,
+  ] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -84,37 +86,66 @@ export default function ConversationPage() {
     setLoading(true);
     setError("");
 
+    /*
+     * Charger la conversation.
+     *
+     * Les messages sont prioritaires.
+     * Une erreur sur les offres ne doit pas
+     * empêcher l'affichage des messages.
+     */
     async function loadConversation() {
       try {
         /*
-         * On charge messages + offres en parallèle.
+         * 1. Charger les messages.
          */
-        const [
-          loadedMessages,
-          loadedOffers,
-        ] = await Promise.all([
-          apiRequest<Message[]>(
+        const loadedMessages =
+          await apiRequest<Message[]>(
             `/conversations/${conversationId}/messages`,
             {
               authenticated: true,
             },
-          ),
-
-          apiRequest<ConversationOffer[]>(
-            `/conversations/${conversationId}/offers`,
-            {
-              authenticated: true,
-            },
-          ),
-        ]);
+          );
 
         if (!mounted) {
           return;
         }
 
         setMessages(loadedMessages);
-        setOffers(loadedOffers);
+
+        /*
+         * 2. Charger les offres séparément.
+         */
+        try {
+          const loadedOffers =
+            await apiRequest<ConversationOffer[]>(
+              `/conversations/${conversationId}/offers`,
+              {
+                authenticated: true,
+              },
+            );
+
+          if (mounted) {
+            setOffers(loadedOffers);
+          }
+        } catch (offerError) {
+          /*
+           * On ne bloque pas la messagerie
+           * si l'API des offres échoue.
+           */
+          console.error(
+            "Impossible de charger les offres :",
+            offerError,
+          );
+
+          if (mounted) {
+            setOffers([]);
+          }
+        }
       } catch (cause) {
+        /*
+         * Ici, le chargement des messages
+         * lui-même a échoué.
+         */
         if (!mounted) {
           return;
         }
@@ -122,7 +153,7 @@ export default function ConversationPage() {
         setError(
           cause instanceof Error
             ? cause.message
-            : "Impossible de charger la conversation.",
+            : "Impossible de charger les messages.",
         );
       } finally {
         if (mounted) {
@@ -197,6 +228,11 @@ export default function ConversationPage() {
   }
 
 
+  /*
+   * Recharger uniquement les offres.
+   *
+   * Utilisé après acceptation/refus.
+   */
   async function reloadOffers() {
     if (!conversationId) {
       return;
@@ -271,7 +307,7 @@ export default function ConversationPage() {
 
 
   /*
-   * Fusion messages + offres dans une seule timeline.
+   * Messages + offres dans une seule timeline.
    */
   const timeline: TimelineItem[] = [
     ...messages.map(
@@ -383,7 +419,7 @@ export default function ConversationPage() {
               }
 
               /*
-               * MESSAGE NORMAL
+               * MESSAGE
                */
               return (
                 <MessageBubble
