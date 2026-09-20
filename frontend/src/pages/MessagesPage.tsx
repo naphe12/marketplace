@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import {
   Link,
 } from "react-router-dom";
@@ -9,10 +10,13 @@ import {
 import {
   apiRequest,
 } from "../api/client";
+
 import ConversationList from "../components/messages/ConversationList";
+
 import type {
   Conversation,
 } from "../components/messages/types";
+
 import {
   useAuth,
 } from "../auth/AuthContext";
@@ -24,9 +28,14 @@ export default function MessagesPage() {
     loading: authLoading,
   } = useAuth();
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [conversations, setConversations] =
+    useState<Conversation[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
     if (!user) {
@@ -36,22 +45,32 @@ export default function MessagesPage() {
 
     let mounted = true;
 
-    apiRequest<Conversation[]>("/conversations", {
-      authenticated: true,
-    })
+    setLoading(true);
+    setError("");
+
+    apiRequest<Conversation[]>(
+      "/conversations",
+      {
+        authenticated: true,
+      },
+    )
       .then(items => {
-        if (mounted) {
-          setConversations(items);
+        if (!mounted) {
+          return;
         }
+
+        setConversations(items);
       })
       .catch(cause => {
-        if (mounted) {
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Impossible de charger les conversations.",
-          );
+        if (!mounted) {
+          return;
         }
+
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Impossible de charger les conversations.",
+        );
       })
       .finally(() => {
         if (mounted) {
@@ -67,7 +86,9 @@ export default function MessagesPage() {
   if (authLoading || loading) {
     return (
       <div className="page">
-        <p role="status">Chargement...</p>
+        <p role="status">
+          Chargement...
+        </p>
       </div>
     );
   }
@@ -76,7 +97,10 @@ export default function MessagesPage() {
     return (
       <div className="page">
         <p>
-          <Link to="/login">Connectez-vous</Link> pour accéder à vos messages.
+          <Link to="/login">
+            Connectez-vous
+          </Link>{" "}
+          pour accéder à vos messages.
         </p>
       </div>
     );
@@ -87,19 +111,42 @@ export default function MessagesPage() {
       <div className="page-heading">
         <div>
           <h1>Messages</h1>
-          <p>Conversations liées aux annonces.</p>
+
+          <p>
+            Conversations liées aux annonces.
+          </p>
         </div>
       </div>
 
       {error && (
-        <p className="form-error" role="alert">
+        <p
+          className="form-error"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <aside className="messages-list">
-        <ConversationList conversations={conversations} />
-      </aside>
+      {conversations.length === 0 ? (
+        <div className="messages-empty">
+          <p>
+            Vous n'avez encore aucune conversation.
+          </p>
+
+          <Link
+            to="/"
+            className="secondary-button"
+          >
+            Voir les annonces
+          </Link>
+        </div>
+      ) : (
+        <aside className="messages-list">
+          <ConversationList
+            conversations={conversations}
+          />
+        </aside>
+      )}
     </div>
   );
 }

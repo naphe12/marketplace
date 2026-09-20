@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -18,6 +19,7 @@ from app.models.user import User
 from app.schemas.offer import OfferCreate
 from app.services.conversation_service  import get_user_conversation
 from app.services.offer_service import OfferService
+from app.models.offer import Offer
 
 
 router = APIRouter(
@@ -157,3 +159,40 @@ async def create_offer(
         buyer=current_user,
         amount=payload.amount,
     )
+@router.get("/{conversation_id}/offers")
+async def list_conversation_offers(
+    conversation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    conversation = await get_user_conversation(
+        db,
+        conversation_id,
+        current_user.id,
+    )
+
+    result = await db.execute(
+        select(Offer)
+        .where(
+            Offer.conversation_id == conversation.id
+        )
+        .order_by(Offer.created_at.asc())
+    )
+
+    offers = result.scalars().all()
+
+    return [
+        {
+            "id": offer.id,
+            "conversation_id": offer.conversation_id,
+            "listing_id": offer.listing_id,
+            "buyer_id": offer.buyer_id,
+            "seller_id": offer.seller_id,
+            "amount": str(offer.amount),
+            "currency": offer.currency,
+            "status": offer.status,
+            "responded_at": offer.responded_at,
+            "created_at": offer.created_at,
+        }
+        for offer in offers
+    ]
