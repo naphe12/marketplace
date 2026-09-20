@@ -268,7 +268,7 @@ class ReputationService:
 
         return profile
 
-    async def get_user_reputation(    db: AsyncSession,    user_id: UUID,) -> dict:
+async def get_user_reputation(    db: AsyncSession,    user_id: UUID,) -> dict:
         review_stats = (
             await db.execute(
                 select(
