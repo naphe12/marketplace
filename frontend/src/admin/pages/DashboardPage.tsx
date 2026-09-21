@@ -27,6 +27,7 @@ import {
 import DataTable from "../components/DataTable";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
+
 import type {
   AdminDashboard,
 } from "../types";
@@ -92,6 +93,25 @@ export default function DashboardPage() {
   }, []);
 
 
+  /*
+   * Compteurs modération.
+   */
+  const reportsPending =
+    dashboard?.moderation.reports_pending ?? 0;
+
+  const fraudSignalsOpen =
+    dashboard?.moderation.fraud_signals_open ?? 0;
+
+  const verificationsPending =
+    dashboard?.moderation.verifications_pending ?? 0;
+
+
+  const moderationTotal =
+    reportsPending +
+    fraudSignalsOpen +
+    verificationsPending;
+
+
   const rows: ActivityRow[] = [
     {
       label: "Utilisateurs",
@@ -118,56 +138,73 @@ export default function DashboardPage() {
       label: "Paiements",
       value: dashboard
         ? `${formatNumber(
-            dashboard.billing.paid_today,
-          )} ${dashboard.billing.currency}`
+          dashboard.billing.paid_today,
+        )} ${dashboard.billing.currency}`
         : "-",
       status: "Tendance",
     },
     {
       label: "Signalements",
       value: dashboard
-        ? String(dashboard.moderation.reports_pending)
+        ? String(reportsPending)
         : "-",
-      status: "À traiter",
+      status:
+        reportsPending > 0
+          ? "À traiter"
+          : "RAS",
     },
     {
       label: "Signaux fraude",
       value: dashboard
-        ? String(dashboard.moderation.fraud_signals_open)
+        ? String(fraudSignalsOpen)
         : "-",
-      status: "Ouverts",
+      status:
+        fraudSignalsOpen > 0
+          ? "Ouverts"
+          : "RAS",
     },
     {
       label: "Vérifications",
       value: dashboard
-        ? String(dashboard.moderation.verifications_pending)
+        ? String(verificationsPending)
         : "-",
-      status: "En attente",
+      status:
+        verificationsPending > 0
+          ? "En attente"
+          : "RAS",
     },
   ];
-
-  const moderationTotal = dashboard
-    ? dashboard.moderation.reports_pending +
-      dashboard.moderation.fraud_signals_open +
-      dashboard.moderation.verifications_pending
-    : 0;
 
 
   return (
     <section className="admin-page">
+
+      {/* =====================================================
+          EN-TÊTE
+         ===================================================== */}
+
       <div className="admin-page-heading">
         <div>
-          <span>Vue d'ensemble opérationnelle</span>
-          <h1>Dashboard</h1>
+          <span>
+            Vue d'ensemble opérationnelle
+          </span>
+
+          <h1>
+            Dashboard
+          </h1>
+
           <p>
-            Pilotez utilisateurs, annonces, vérifications,
-            signalements, anti-fraude et paiements depuis une
-            seule vue.
+            Pilotez utilisateurs, annonces,
+            vérifications, signalements,
+            anti-fraude et paiements depuis
+            une seule vue.
           </p>
         </div>
 
+
         <div className="admin-dashboard-health">
           <Sparkles size={18} />
+
           <div>
             <strong>
               {loading
@@ -176,38 +213,106 @@ export default function DashboardPage() {
                   ? "Attention requise"
                   : "Système actif"}
             </strong>
+
             <span>
-              {error || `${moderationTotal} dossier(s) à suivre`}
+              {error ||
+                `${moderationTotal} dossier(s) à suivre`}
             </span>
           </div>
         </div>
       </div>
 
+
+      {/* =====================================================
+          PRIORITÉS
+         ===================================================== */}
+
       {moderationTotal > 0 && (
         <section className="admin-command-strip">
-          <div>
+
+          <div className="admin-command-strip__summary">
             <AlertTriangle size={20} />
+
             <div>
-              <strong>Priorité modération</strong>
+              <strong>
+                Priorités opérationnelles
+              </strong>
+
               <span>
-                {moderationTotal} élément(s) attendent une décision
-                admin.
+                {moderationTotal} dossier(s)
+                nécessitent votre attention.
               </span>
+
+
+              <div className="admin-command-strip__counts">
+
+                <span>
+                  <Flag size={14} />
+                  {reportsPending} signalement(s)
+                </span>
+
+                <span>
+                  <ShieldAlert size={14} />
+                  {fraudSignalsOpen} alerte(s) fraude
+                </span>
+
+                <span>
+                  <FileCheck size={14} />
+                  {verificationsPending} vérification(s)
+                </span>
+
+              </div>
             </div>
           </div>
 
-          <Link to="/admin/reports">
-            Traiter les signalements
-          </Link>
+
+          <div className="admin-command-strip__actions">
+
+            {reportsPending > 0 && (
+              <Link
+                to="/admin/reports"
+                className="admin-command-action"
+              >
+                <Flag size={17} />
+                Signalements
+                <strong>
+                  {reportsPending}
+                </strong>
+              </Link>
+            )}
+
+
+            {fraudSignalsOpen > 0 && (
+              <Link
+                to="/admin/fraud"
+                className="admin-command-action admin-command-action--danger"
+              >
+                <ShieldAlert size={17} />
+                Anti-fraude
+                <strong>
+                  {fraudSignalsOpen}
+                </strong>
+              </Link>
+            )}
+
+          </div>
         </section>
       )}
 
+
+      {/* =====================================================
+          CARTES
+         ===================================================== */}
+
       <div className="admin-stats-grid">
+
         <StatCard
           label="Utilisateurs"
           value={
             dashboard
-              ? formatNumber(dashboard.users.total)
+              ? formatNumber(
+                dashboard.users.total,
+              )
               : "-"
           }
           detail="Comptes et activité"
@@ -219,11 +324,14 @@ export default function DashboardPage() {
           }
         />
 
+
         <StatCard
           label="Annonces"
           value={
             dashboard
-              ? formatNumber(dashboard.listings.active)
+              ? formatNumber(
+                dashboard.listings.active,
+              )
               : "-"
           }
           detail="Inventaire marketplace"
@@ -231,34 +339,42 @@ export default function DashboardPage() {
           tone="success"
           trend={
             dashboard
-              ? `${formatNumber(dashboard.listings.total)} total`
+              ? `${formatNumber(
+                dashboard.listings.total,
+              )} total`
               : undefined
           }
         />
+
 
         <StatCard
           label="Ventes"
           value={
             dashboard
-              ? formatNumber(dashboard.transactions.total)
+              ? formatNumber(
+                dashboard.transactions.total,
+              )
               : "-"
           }
           detail="Transactions réalisées"
           icon={TrendingUp}
           trend={
             dashboard
-              ? `${formatNumber(dashboard.transactions.completed)} complétées`
+              ? `${formatNumber(
+                dashboard.transactions.completed,
+              )} complétées`
               : undefined
           }
         />
+
 
         <StatCard
           label="Paiements"
           value={
             dashboard
               ? `${formatNumber(
-                  dashboard.billing.paid_today,
-                )} ${dashboard.billing.currency}`
+                dashboard.billing.paid_today,
+              )} ${dashboard.billing.currency}`
               : "-"
           }
           detail="Commandes et règlements"
@@ -266,35 +382,38 @@ export default function DashboardPage() {
           tone="success"
         />
 
+
         <StatCard
           label="Signalements"
           value={
             dashboard
-              ? dashboard.moderation.reports_pending
+              ? reportsPending
               : "-"
           }
-          detail="Dossiers en attente"
+          detail="Signalements utilisateurs en attente"
           icon={Flag}
           tone="warning"
         />
+
 
         <StatCard
           label="Anti-fraude"
           value={
             dashboard
-              ? dashboard.moderation.fraud_signals_open
+              ? fraudSignalsOpen
               : "-"
           }
-          detail="Signaux ouverts"
+          detail="Signaux automatiques ouverts"
           icon={ShieldAlert}
           tone="danger"
         />
+
 
         <StatCard
           label="Vérifications"
           value={
             dashboard
-              ? dashboard.moderation.verifications_pending
+              ? verificationsPending
               : "-"
           }
           detail="Demandes à revoir"
@@ -302,35 +421,56 @@ export default function DashboardPage() {
           tone="warning"
         />
 
+
         <StatCard
           label="Paramètres"
           value={
-            dashboard ? "Configuré" : "-"
+            dashboard
+              ? "Configuré"
+              : "-"
           }
           detail="Configuration marketplace"
           icon={Settings}
         />
+
       </div>
 
+
+      {/* =====================================================
+          TENDANCES
+         ===================================================== */}
+
       <section className="admin-panel admin-dashboard-panel">
+
         <div className="admin-panel-heading">
+
           <div>
-            <h2>Tendances à surveiller</h2>
+            <h2>
+              Tendances à surveiller
+            </h2>
+
             <p>
-              Volumes principaux pour prioriser la journée.
+              Volumes principaux pour
+              prioriser la journée.
             </p>
           </div>
 
+
           {loading && (
-            <span>Chargement...</span>
+            <span>
+              Chargement...
+            </span>
           )}
+
         </div>
+
 
         {error && (
           <p className="form-error">
             {error}
           </p>
         )}
+
 
         <DataTable
           rows={rows}
@@ -339,32 +479,46 @@ export default function DashboardPage() {
             {
               key: "label",
               label: "File",
-              render: row => row.label,
+              render: row =>
+                row.label,
             },
             {
               key: "value",
               label: "Volume",
-              render: row => row.value,
+              render: row =>
+                row.value,
             },
             {
               key: "status",
               label: "Statut",
               render: row => (
-                <StatusBadge tone="warning">
+                <StatusBadge
+                  tone={
+                    row.status === "RAS"
+                      ? "success"
+                      : "warning"
+                  }
+                >
                   {row.status}
                 </StatusBadge>
               ),
             },
           ]}
         />
+
       </section>
+
     </section>
   );
 }
 
 
-function formatNumber(value: string | number) {
-  return new Intl.NumberFormat("fr-FR").format(
+function formatNumber(
+  value: string | number,
+) {
+  return new Intl.NumberFormat(
+    "fr-FR",
+  ).format(
     Number(value),
   );
 }
