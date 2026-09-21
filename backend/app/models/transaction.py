@@ -13,6 +13,20 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+def generate_transaction_number() -> str:
+    return (
+        f"TX-"
+        f"{datetime.now(timezone.utc):%Y%m%d}-"
+        f"{uuid4().hex[:10].upper()}"
+    )
+
 
 class Transaction(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "transactions"
@@ -88,3 +102,10 @@ class Transaction(UUIDMixin, TimestampMixin, Base):
         Text,
         nullable=True,
     )
+    transaction_number: Mapped[str] = mapped_column(
+    String(50),
+    nullable=False,
+    unique=True,
+    index=True,
+    default=generate_transaction_number,
+)

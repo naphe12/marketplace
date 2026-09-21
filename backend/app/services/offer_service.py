@@ -8,9 +8,11 @@ from app.fraud.engine import fraud_engine
 from app.models.conversation import Conversation
 from app.models.listing import Listing
 from app.models.offer import Offer
-from app.models.transaction import Transaction
 from app.models.user import User
-
+from app.models.transaction import (
+    Transaction,
+    generate_transaction_number,
+)
 
 class OfferService:
     @staticmethod
@@ -167,6 +169,7 @@ class OfferService:
         )
 
         transaction = Transaction(
+            transaction_number=generate_transaction_number(),
             listing_id=listing.id,
             offer_id=offer.id,
             buyer_id=offer.buyer_id,
