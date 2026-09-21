@@ -451,6 +451,11 @@ export default function ConversationPage() {
         ),
     );
 
+  console.log(
+    "TRANSACTIONS CONVERSATION",
+    conversationTransactions,
+  );
+
 
   /*
    * Messages + offres + transactions
