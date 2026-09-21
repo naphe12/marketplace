@@ -241,7 +241,7 @@ export default function FraudSignalsPage() {
 
 
   return (
-    <section className="admin-page">
+    <section className="admin-page fraud-page">
 
       <div className="admin-page-heading">
         <div>
@@ -269,7 +269,7 @@ export default function FraudSignalsPage() {
         </p>
       )}
 
-
+      <div className="fraud-table-panel">
       <DataTable
         rows={items}
 
@@ -326,12 +326,23 @@ export default function FraudSignalsPage() {
             label:
               "Score",
 
-            render:
-              row =>
-                row.risk_score !==
-                null
-                  ? `${row.risk_score}/100`
-                  : "-",
+            render: row =>
+              row.risk_score !== null ? (
+                <div
+                  className={`fraud-risk-score fraud-risk-score--${row.severity.toLowerCase()
+                    }`}
+                >
+                  <strong>
+                    {row.risk_score}
+                  </strong>
+
+                  <span>
+                    /100
+                  </span>
+                </div>
+              ) : (
+                "-"
+              ),
           },
 
           {
@@ -426,6 +437,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--fraud"
 
                     disabled={
                       busyId ===
@@ -445,6 +457,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--false-positive"
 
                     disabled={
                       busyId ===
@@ -464,6 +477,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--legit"
 
                     disabled={
                       busyId ===
@@ -483,6 +497,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--uncertain"
 
                     disabled={
                       busyId ===
@@ -502,6 +517,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--escalate"
 
                     disabled={
                       busyId ===
@@ -521,6 +537,7 @@ export default function FraudSignalsPage() {
 
                   <button
                     type="button"
+                    className="fraud-action fraud-action--suspend"
 
                     disabled={
                       busyId ===
@@ -541,7 +558,7 @@ export default function FraudSignalsPage() {
           },
         ]}
       />
-
+    </div>
     </section>
   );
 }
