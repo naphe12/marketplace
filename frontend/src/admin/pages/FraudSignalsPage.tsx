@@ -17,7 +17,7 @@ import type {
   AdminFraudSignal,
 } from "../types";
 
-
+import './admin.css'
 type FraudLabel =
   | "CONFIRMED_FRAUD"
   | "FALSE_POSITIVE"
