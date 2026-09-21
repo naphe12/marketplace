@@ -73,7 +73,7 @@ class Transaction(UUIDMixin, TimestampMixin, Base):
 
     status: Mapped[str] = mapped_column(
         String(30),
-        default="AGREED",
+        default="ACCEPTED",
         nullable=False,
         index=True,
     )

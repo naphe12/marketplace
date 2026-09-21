@@ -122,7 +122,7 @@ async def confirm_transaction(
         current_user.id,
     )
 
-    if transaction.status != "AGREED":
+    if transaction.status != "ACCEPTED":
         raise HTTPException(
             status_code=400,
             detail=(
@@ -193,7 +193,7 @@ async def cancel_transaction(
         current_user.id,
     )
 
-    if transaction.status != "AGREED":
+    if transaction.status != "ACCEPTED":
         raise HTTPException(
             status_code=400,
             detail=(

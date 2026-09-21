@@ -20,7 +20,7 @@ export default function TransactionsPage() {
   return (
     <section className="admin-page">
       <div className="admin-page-heading"><div><span>Lecture MVP</span><h1>Transactions</h1><p>Suivez les accords, confirmations acheteur/vendeur et annulations.</p></div></div>
-      <form className="admin-filters"><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Tous statuts</option><option value="AGREED">AGREED</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></form>
+      <form className="admin-filters"><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Tous statuts</option><option value="ACCEPTED">ACCEPTED</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></form>
       {error && <p className="form-error">{error}</p>}
       <DataTable rows={items} emptyLabel="Aucune transaction." columns={[
         { key: "id", label: "Transaction", render: row => row.id },

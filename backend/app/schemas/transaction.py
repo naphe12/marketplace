@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class TransactionResponse(BaseModel):
     id: UUID
+    transaction_number: str
 
     listing_id: UUID
     offer_id: UUID | None

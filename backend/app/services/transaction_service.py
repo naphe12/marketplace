@@ -73,7 +73,7 @@ class TransactionService:
         if transaction.status == "COMPLETED":
             return transaction
 
-        if transaction.status != "AGREED":
+        if transaction.status != "ACCEPTED":
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -214,7 +214,7 @@ class TransactionService:
             )
         )
 
-        if transaction.status != "AGREED":
+        if transaction.status != "ACCEPTED":
             raise HTTPException(
                 status_code=400,
                 detail=(

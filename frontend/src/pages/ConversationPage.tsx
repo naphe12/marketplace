@@ -15,6 +15,7 @@ import {
 import MessageBubble from "../components/messages/MessageBubble";
 import MessageComposer from "../components/messages/MessageComposer";
 import OfferCard from "../components/messages/OfferCard";
+import TransactionCard from "../components/messages/TransactionCard";
 
 import type {
   Message,
@@ -23,6 +24,10 @@ import type {
 import type {
   ConversationOffer,
 } from "../types/offer";
+
+import type {
+  MarketplaceTransaction,
+} from "../types/transaction";
 
 import {
   useAuth,
@@ -41,6 +46,12 @@ type TimelineItem =
     id: string;
     created_at: string;
     offer: ConversationOffer;
+  }
+  | {
+    type: "TRANSACTION";
+    id: string;
+    created_at: string;
+    transaction: MarketplaceTransaction;
   };
 
 
@@ -60,6 +71,9 @@ export default function ConversationPage() {
   const [offers, setOffers] =
     useState<ConversationOffer[]>([]);
 
+  const [transactions, setTransactions] =
+    useState<MarketplaceTransaction[]>([]);
+
   const [text, setText] =
     useState("");
 
@@ -74,6 +88,11 @@ export default function ConversationPage() {
     setOfferActionLoading,
   ] = useState<string | null>(null);
 
+  const [
+    transactionActionId,
+    setTransactionActionId,
+  ] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!conversationId || !user) {
@@ -86,17 +105,13 @@ export default function ConversationPage() {
     setLoading(true);
     setError("");
 
-    /*
-     * Charger la conversation.
-     *
-     * Les messages sont prioritaires.
-     * Une erreur sur les offres ne doit pas
-     * empêcher l'affichage des messages.
-     */
     async function loadConversation() {
       try {
         /*
-         * 1. Charger les messages.
+         * 1. Messages.
+         *
+         * Le chargement des messages reste
+         * prioritaire.
          */
         const loadedMessages =
           await apiRequest<Message[]>(
@@ -113,7 +128,10 @@ export default function ConversationPage() {
         setMessages(loadedMessages);
 
         /*
-         * 2. Charger les offres séparément.
+         * 2. Offres.
+         *
+         * Une erreur ici ne doit pas bloquer
+         * la messagerie.
          */
         try {
           const loadedOffers =
@@ -128,10 +146,6 @@ export default function ConversationPage() {
             setOffers(loadedOffers);
           }
         } catch (offerError) {
-          /*
-           * On ne bloque pas la messagerie
-           * si l'API des offres échoue.
-           */
           console.error(
             "Impossible de charger les offres :",
             offerError,
@@ -141,11 +155,41 @@ export default function ConversationPage() {
             setOffers([]);
           }
         }
-      } catch (cause) {
+
         /*
-         * Ici, le chargement des messages
-         * lui-même a échoué.
+         * 3. Transactions de l'utilisateur.
+         *
+         * On chargera toutes ses transactions,
+         * puis on filtrera celles qui concernent
+         * les offres de cette conversation.
          */
+        try {
+          const loadedTransactions =
+            await apiRequest<
+              MarketplaceTransaction[]
+            >(
+              "/transactions/mine",
+              {
+                authenticated: true,
+              },
+            );
+
+          if (mounted) {
+            setTransactions(
+              loadedTransactions,
+            );
+          }
+        } catch (transactionError) {
+          console.error(
+            "Impossible de charger les transactions :",
+            transactionError,
+          );
+
+          if (mounted) {
+            setTransactions([]);
+          }
+        }
+      } catch (cause) {
         if (!mounted) {
           return;
         }
@@ -162,7 +206,9 @@ export default function ConversationPage() {
       }
     }
 
+
     void loadConversation();
+
 
     /*
      * Marquer la conversation comme lue.
@@ -174,6 +220,7 @@ export default function ConversationPage() {
         authenticated: true,
       },
     ).catch(() => undefined);
+
 
     return () => {
       mounted = false;
@@ -229,9 +276,7 @@ export default function ConversationPage() {
 
 
   /*
-   * Recharger uniquement les offres.
-   *
-   * Utilisé après acceptation/refus.
+   * Recharger les offres.
    */
   async function reloadOffers() {
     if (!conversationId) {
@@ -250,6 +295,29 @@ export default function ConversationPage() {
   }
 
 
+  /*
+   * Recharger les transactions.
+   */
+  async function reloadTransactions() {
+    const loadedTransactions =
+      await apiRequest<
+        MarketplaceTransaction[]
+      >(
+        "/transactions/mine",
+        {
+          authenticated: true,
+        },
+      );
+
+    setTransactions(
+      loadedTransactions,
+    );
+  }
+
+
+  /*
+   * Accepter une offre.
+   */
   async function handleAcceptOffer(
     offerId: string,
   ) {
@@ -265,7 +333,12 @@ export default function ConversationPage() {
         },
       );
 
+      /*
+       * L'acceptation modifie l'offre ET
+       * crée une transaction.
+       */
       await reloadOffers();
+      await reloadTransactions();
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -278,6 +351,9 @@ export default function ConversationPage() {
   }
 
 
+  /*
+   * Refuser une offre.
+   */
   async function handleRejectOffer(
     offerId: string,
   ) {
@@ -307,14 +383,78 @@ export default function ConversationPage() {
 
 
   /*
-   * Messages + offres dans une seule timeline.
+   * Confirmer la transaction.
+   *
+   * Le backend détermine automatiquement
+   * si current_user est acheteur ou vendeur.
+   */
+  async function handleConfirmTransaction(
+    transactionId: string,
+  ) {
+    setTransactionActionId(
+      transactionId,
+    );
+
+    setError("");
+
+    try {
+      await apiRequest(
+        `/transactions/${transactionId}/confirm`,
+        {
+          method: "POST",
+          authenticated: true,
+        },
+      );
+
+      await reloadTransactions();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de confirmer la transaction.",
+      );
+    } finally {
+      setTransactionActionId(null);
+    }
+  }
+
+
+  /*
+   * Les transactions chargées concernent
+   * potentiellement plusieurs conversations.
+   *
+   * On ne conserve ici que celles dont
+   * offer_id appartient à cette conversation.
+   */
+  const conversationOfferIds =
+    new Set(
+      offers.map(
+        offer => offer.id,
+      ),
+    );
+
+
+  const conversationTransactions =
+    transactions.filter(
+      transaction =>
+        transaction.offer_id !== null &&
+        conversationOfferIds.has(
+          transaction.offer_id,
+        ),
+    );
+
+
+  /*
+   * Messages + offres + transactions
+   * dans une seule timeline.
    */
   const timeline: TimelineItem[] = [
     ...messages.map(
       (message): TimelineItem => ({
         type: "MESSAGE",
         id: message.id,
-        created_at: message.created_at,
+        created_at:
+          message.created_at,
         message,
       }),
     ),
@@ -323,18 +463,38 @@ export default function ConversationPage() {
       (offer): TimelineItem => ({
         type: "OFFER",
         id: offer.id,
-        created_at: offer.created_at,
+        created_at:
+          offer.created_at,
         offer,
+      }),
+    ),
+
+    ...conversationTransactions.map(
+      (
+        transaction,
+      ): TimelineItem => ({
+        type: "TRANSACTION",
+        id: transaction.id,
+        created_at:
+          transaction.created_at,
+        transaction,
       }),
     ),
   ].sort(
     (a, b) =>
-      new Date(a.created_at).getTime() -
-      new Date(b.created_at).getTime(),
+      new Date(
+        a.created_at,
+      ).getTime() -
+      new Date(
+        b.created_at,
+      ).getTime(),
   );
 
 
-  if (authLoading || loading) {
+  if (
+    authLoading ||
+    loading
+  ) {
     return (
       <div className="page">
         <p role="status">
@@ -386,7 +546,8 @@ export default function ConversationPage() {
 
           {timeline.length === 0 ? (
             <div className="empty-state">
-              Aucun message ou offre pour le moment.
+              Aucun message, offre ou transaction
+              pour le moment.
             </div>
           ) : (
             timeline.map(item => {
@@ -394,12 +555,19 @@ export default function ConversationPage() {
               /*
                * OFFRE
                */
-              if (item.type === "OFFER") {
+              if (
+                item.type ===
+                "OFFER"
+              ) {
                 return (
                   <OfferCard
                     key={`offer-${item.id}`}
-                    offer={item.offer}
-                    currentUserId={user.id}
+                    offer={
+                      item.offer
+                    }
+                    currentUserId={
+                      user.id
+                    }
                     loading={
                       offerActionLoading ===
                       item.offer.id
@@ -418,15 +586,49 @@ export default function ConversationPage() {
                 );
               }
 
+
+              /*
+               * TRANSACTION
+               */
+              if (
+                item.type ===
+                "TRANSACTION"
+              ) {
+                return (
+                  <TransactionCard
+                    key={`transaction-${item.id}`}
+                    transaction={
+                      item.transaction
+                    }
+                    currentUserId={
+                      user.id
+                    }
+                    loading={
+                      transactionActionId ===
+                      item.transaction.id
+                    }
+                    onConfirm={() =>
+                      void handleConfirmTransaction(
+                        item.transaction.id,
+                      )
+                    }
+                  />
+                );
+              }
+
+
               /*
                * MESSAGE
                */
               return (
                 <MessageBubble
                   key={`message-${item.id}`}
-                  message={item.message}
+                  message={
+                    item.message
+                  }
                   mine={
-                    item.message.sender_id ===
+                    item.message
+                      .sender_id ===
                     user.id
                   }
                 />
