@@ -176,7 +176,7 @@ class OfferService:
             seller_id=offer.seller_id,
             agreed_price=offer.amount,
             currency=offer.currency,
-            status="AGREED",
+            status="ACCEPTED",
         )
 
         db.add(transaction)
