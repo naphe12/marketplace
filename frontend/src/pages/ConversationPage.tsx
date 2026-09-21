@@ -144,6 +144,10 @@ export default function ConversationPage() {
 
           if (mounted) {
             setOffers(loadedOffers);
+            console.log(
+              "OFFRES CONVERSATION",
+              loadedOffers,
+            );
           }
         } catch (offerError) {
           console.error(
@@ -176,6 +180,10 @@ export default function ConversationPage() {
 
           if (mounted) {
             setTransactions(
+              loadedTransactions,
+            );
+            console.log(
+              "TRANSACTIONS USER",
               loadedTransactions,
             );
           }
