@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
 import datetime
+
 from uuid import UUID
 
 from fastapi import (
