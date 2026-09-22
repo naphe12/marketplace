@@ -100,7 +100,7 @@ export default function FraudSignalsPage() {
       setError("");
 
       await apiRequest(
-        `/admin/fraud-signals/${item.id}/review`,
+        `/transactions/fraud-signals/${item.id}/review`,
         {
           method:
             "POST",
