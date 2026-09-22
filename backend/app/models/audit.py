@@ -5,6 +5,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
+from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from uuid import UUID
+
+# À l'intérieur de class AuditLog :
+
 
 class AuditLog(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "audit_logs"
@@ -34,5 +42,15 @@ class AuditLog(UUIDMixin, TimestampMixin, Base):
 
     metadata_json: Mapped[dict | None] = mapped_column(
         JSON,
+        nullable=True,
+    )
+
+    entity_type: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
+    entity_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
         nullable=True,
     )
