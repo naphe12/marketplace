@@ -64,6 +64,7 @@ from app.schemas.category import (
 )
 from app.services.moderation_service import ModerationService
 from app.services.verification_service import VerificationService
+from backend.app.models import listing
 
 
 router = APIRouter(
@@ -655,15 +656,14 @@ async def admin_send_notification(
     for user_id in user_ids:
         db.add(
             Notification(
-                user_id=user_id,
-                notification_type="ADMIN_ANNOUNCEMENT",
-                title=data.title,
-                message=data.message,
-                channel="IN_APP",
-                status="SENT",
-                sent_at=datetime.now(timezone.utc),
-                data={"recipient": recipient},
-            )
+        user_id=listing.seller_id,
+        notification_type="LISTING_STATUS_CHANGED",
+        title="Statut de votre annonce",
+        message=(
+            f"Votre annonce « {listing.title} » "
+            f"est maintenant {listing.status}."
+        ),
+    )
         )
 
     await write_audit(
