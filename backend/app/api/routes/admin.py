@@ -97,12 +97,18 @@ async def write_audit(
 ):
     db.add(
         AuditLog(
-            actor_user_id=actor_user_id,
-            action=action,
-            target_type=target_type,
-            target_id=target_id,
-            metadata_json=metadata,
-        )
+        actor_user_id=actor_user_id,
+        action=action,
+
+        # Colonnes historiques
+        entity_type=target_type,
+        entity_id=target_id,
+
+        # Colonnes actuelles
+        target_type=target_type,
+        target_id=target_id,
+        metadata_json=metadata,
+    )
     )
 
 
