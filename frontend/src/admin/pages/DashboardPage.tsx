@@ -27,6 +27,7 @@ import {
 import DataTable from "../components/DataTable";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
+import "../styles/admin-tables.css";
 
 import type {
   AdminDashboard,
@@ -471,6 +472,9 @@ export default function DashboardPage() {
           </p>
         )}
 
+        <div className="admin-table-shell">
+          <div className="admin-table-scroll">
+
 
         <DataTable
           rows={rows}
@@ -505,6 +509,9 @@ export default function DashboardPage() {
             },
           ]}
         />
+
+      </div>
+    </div>
 
       </section>
 

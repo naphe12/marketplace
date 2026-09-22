@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminListResponse, AdminListing } from "../types";
-
+import "../styles/admin-tables.css";
 const PAGE_SIZE = 25;
 const statuses = ["ACTIVE", "DRAFT", "PENDING_PAYMENT", "RESERVED", "SOLD", "EXPIRED", "SUSPENDED", "REMOVED", "REJECTED"];
 
@@ -69,6 +69,8 @@ export default function ListingsPage() {
 
       {error && <p className="form-error">{error}</p>}
       {loading && <p role="status">Chargement...</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
 
       <DataTable
         rows={data?.items ?? []}
@@ -82,6 +84,8 @@ export default function ListingsPage() {
           { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => action(row, "suspend")}>Suspendre</button><button type="button" onClick={() => action(row, "restore")}>Restaurer</button><button type="button" onClick={() => action(row, "remove")}>Retirer</button></div> },
         ]}
       />
+        </div>
+      </div>
 
       {data && (
         <div className="admin-pagination">

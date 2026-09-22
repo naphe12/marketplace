@@ -10,6 +10,8 @@ import {
 import DataTable
   from "../components/DataTable";
 
+import "../styles/admin-tables.css";
+
 import StatusBadge
   from "../components/StatusBadge";
 
@@ -270,6 +272,8 @@ export default function FraudSignalsPage() {
       )}
 
       <div className="fraud-table-panel">
+        <div className="admin-table-shell">
+          <div className="admin-table-scroll">
       <DataTable
         rows={items}
 
@@ -558,6 +562,7 @@ export default function FraudSignalsPage() {
           },
         ]}
       />
+          </div></div>
     </div>
     </section>
   );

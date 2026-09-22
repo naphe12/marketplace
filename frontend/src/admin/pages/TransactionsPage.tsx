@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminTransaction } from "../types";
-
+import "../styles/admin-tables.css";
 export default function TransactionsPage() {
   const [status, setStatus] = useState("");
   const [items, setItems] = useState<AdminTransaction[]>([]);
@@ -22,6 +22,8 @@ export default function TransactionsPage() {
       <div className="admin-page-heading"><div><span>Lecture MVP</span><h1>Transactions</h1><p>Suivez les accords, confirmations acheteur/vendeur et annulations.</p></div></div>
       <form className="admin-filters"><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Tous statuts</option><option value="ACCEPTED">ACCEPTED</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></form>
       {error && <p className="form-error">{error}</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucune transaction." columns={[
         { key: "id", label: "Transaction", render: row => row.id },
         { key: "listing", label: "Annonce", render: row => row.listing_id },
@@ -31,6 +33,8 @@ export default function TransactionsPage() {
         { key: "status", label: "Status", render: row => <StatusBadge tone={row.status === "COMPLETED" ? "success" : row.status === "CANCELLED" ? "danger" : "warning"}>{row.status}</StatusBadge> },
         { key: "confirmations", label: "Confirmations", render: row => `${row.buyer_confirmed_at ? "Buyer ok" : "Buyer -"} / ${row.seller_confirmed_at ? "Seller ok" : "Seller -"}` },
       ]} />
+        </div>
+      </div>
     </section>
   );
 }

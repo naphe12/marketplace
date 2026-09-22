@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminListResponse, AdminUser } from "../types";
-
+import "../styles/admin-tables.css";
 const PAGE_SIZE = 25;
 
 export default function UsersPage() {
@@ -84,6 +84,8 @@ export default function UsersPage() {
 
       {error && <p className="form-error">{error}</p>}
       {loading && <p role="status">Chargement...</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
 
       <DataTable
         rows={data?.items ?? []}
@@ -97,6 +99,8 @@ export default function UsersPage() {
           { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => action(row, "suspend")}>Suspendre</button><button type="button" onClick={() => action(row, "block")}>Bloquer</button><button type="button" onClick={() => action(row, "restore")}>Restaurer</button></div> },
         ]}
       />
+        </div>
+      </div>
 
       {data && (
         <div className="admin-pagination">

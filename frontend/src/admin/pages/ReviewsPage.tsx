@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminReview } from "../types";
-
+import "../styles/admin-tables.css";
 export default function ReviewsPage() {
   const [items, setItems] = useState<AdminReview[]>([]);
   const [attempt, setAttempt] = useState(0);
@@ -32,6 +32,8 @@ export default function ReviewsPage() {
     <section className="admin-page">
       <div className="admin-page-heading"><div><span>Réputation</span><h1>Avis</h1><p>La note reste intacte. Seul le commentaire abusif peut être masqué ou restauré.</p></div></div>
       {error && <p className="form-error">{error}</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucun avis." columns={[
         { key: "rating", label: "Note", render: row => `${row.rating}/5` },
         { key: "comment", label: "Commentaire", render: row => row.comment ?? "-" },
@@ -40,6 +42,8 @@ export default function ReviewsPage() {
         { key: "status", label: "Statut", render: row => <StatusBadge tone={row.status === "PUBLISHED" ? "success" : "warning"}>{row.status}</StatusBadge> },
         { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => action(row, "hide")}>Masquer</button><button type="button" onClick={() => action(row, "restore")}>Restaurer</button></div> },
       ]} />
+    </div>
+</div >
     </section>
   );
 }

@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminVerification } from "../types";
-
+import "../styles/admin-tables.css";
 const tabs = ["PENDING", "VERIFIED", "REJECTED"];
 
 export default function VerificationsPage() {
@@ -33,6 +33,8 @@ export default function VerificationsPage() {
       <div className="admin-page-heading"><div><span>Identité / business</span><h1>Vérifications</h1><p>Traitez les dossiers sans automatiser la décision humaine.</p></div></div>
       <div className="admin-tabs">{tabs.map(tab => <button key={tab} type="button" className={tab === status ? "admin-tab admin-tab--active" : "admin-tab"} onClick={() => setStatus(tab)}>{tab}</button>)}</div>
       {error && <p className="form-error">{error}</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucun dossier." columns={[
         { key: "user", label: "Utilisateur", render: row => row.user_id },
         { key: "type", label: "Type", render: row => row.verification_type },
@@ -41,6 +43,8 @@ export default function VerificationsPage() {
         { key: "history", label: "Historique", render: row => row.rejection_reason ?? row.reviewed_at ?? "-" },
         { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => review(row, "VERIFIED")}>APPROVE</button><button type="button" onClick={() => review(row, "REJECTED")}>REJECT</button></div> },
       ]} />
+        </div>
+      </div>
     </section>
   );
 }

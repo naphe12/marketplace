@@ -4,7 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminReport } from "../types";
-
+import "../styles/admin-tables.css";
 const tabs = ["PENDING", "CONFIRMED", "REJECTED", "IGNORED"];
 
 export default function ReportsPage() {
@@ -33,6 +33,8 @@ export default function ReportsPage() {
       <div className="admin-page-heading"><div><span>Investigation</span><h1>Signalements</h1><p>Un signalement seul ne sanctionne personne. Il ouvre une enquête.</p></div></div>
       <div className="admin-tabs">{tabs.map(tab => <button key={tab} type="button" className={tab === status ? "admin-tab admin-tab--active" : "admin-tab"} onClick={() => setStatus(tab)}>{tab}</button>)}</div>
       {error && <p className="form-error">{error}</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucun signalement." columns={[
         { key: "reason", label: "Signalement", render: row => row.reason },
         { key: "reporter", label: "Reporter", render: row => row.reporter_id },
@@ -41,6 +43,8 @@ export default function ReportsPage() {
         { key: "status", label: "Statut", render: row => <StatusBadge tone={row.status === "CONFIRMED" ? "danger" : row.status === "PENDING" ? "warning" : "neutral"}>{row.status}</StatusBadge> },
         { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => review(row, "CONFIRMED")}>CONFIRMED</button><button type="button" onClick={() => review(row, "REJECTED")}>REJECTED</button><button type="button" onClick={() => review(row, "IGNORED")}>IGNORED</button></div> },
       ]} />
+        </div>
+      </div>
     </section>
   );
 }

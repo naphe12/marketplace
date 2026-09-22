@@ -4,6 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminListingPackage } from "../types";
+import "../styles/admin-tables.css";
 
 const emptyPackage = { code: "", name: "", duration_days: 30, price: "", currency: "BIF", active: true, sort_order: 0 };
 
@@ -50,6 +51,8 @@ export default function PackagesPage() {
         <input type="number" placeholder="Prix" value={draft.price} onChange={event => setDraft({ ...draft, price: event.target.value })} />
         <button type="submit">Créer</button>
       </form>
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucun package." columns={[
         { key: "name", label: "Package", render: row => row.name },
         { key: "duration", label: "Durée", render: row => `${row.duration_days} jours` },
@@ -57,6 +60,8 @@ export default function PackagesPage() {
         { key: "status", label: "Statut", render: row => <StatusBadge tone={row.active ? "success" : "neutral"}>{row.active ? "actif" : "inactif"}</StatusBadge> },
         { key: "actions", label: "Actions", render: row => <div className="admin-row-actions"><button type="button" onClick={() => update(row, { active: !row.active })}>{row.active ? "Désactiver" : "Activer"}</button><button type="button" onClick={() => update(row, { price: prompt("Nouveau prix", row.price) ?? row.price })}>Modifier prix</button></div> },
       ]} />
+    </div>
+</div >
     </section>
   );
 }

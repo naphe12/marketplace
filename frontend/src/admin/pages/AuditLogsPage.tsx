@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import "../styles/admin-tables.css";
 import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import type { AdminAuditLog } from "../types";
@@ -18,6 +18,8 @@ export default function AuditLogsPage() {
     <section className="admin-page">
       <div className="admin-page-heading"><div><span>Lecture seule</span><h1>Audit</h1><p>Journal non modifiable des actions sensibles effectuées dans l'administration.</p></div></div>
       {error && <p className="form-error">{error}</p>}
+      <div className="admin-table-shell">
+        <div className="admin-table-scroll">
       <DataTable rows={items} emptyLabel="Aucune entrée d'audit." columns={[
         { key: "time", label: "Heure", render: row => new Date(row.created_at).toLocaleString("fr-FR") },
         { key: "actor", label: "Admin", render: row => row.actor_user_id },
@@ -25,6 +27,8 @@ export default function AuditLogsPage() {
         { key: "target", label: "Cible", render: row => `${row.target_type}${row.target_id ? ` ${row.target_id}` : ""}` },
         { key: "metadata", label: "Métadonnées", render: row => row.metadata_json ? JSON.stringify(row.metadata_json) : "-" },
       ]} />
+        </div>
+      </div>
     </section>
   );
 }
