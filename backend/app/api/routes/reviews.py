@@ -165,11 +165,7 @@ async def review_fraud_signal(
         current_admin.id
     )
 
-    signal.reviewed_at = (
-        datetime.now(
-            timezone.utc
-        )
-    )
+    signal.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
 
     await db.commit()
 
