@@ -64,7 +64,7 @@ from app.schemas.category import (
 )
 from app.services.moderation_service import ModerationService
 from app.services.verification_service import VerificationService
-from backend.app.models import listing
+from app.models import listing
 
 
 router = APIRouter(
