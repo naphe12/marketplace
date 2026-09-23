@@ -5,6 +5,24 @@ import { useAuth } from "../auth/AuthContext";
 import PhotoUploader from "../components/publish/PhotoUploader";
 import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
+import ApproximateLocationMap from "../components/location/ApproximateLocationMap";
+
+// Ne présume pas que types/listing.ts comporte déjà ces champs :
+// l'API publique doit effectivement les renvoyer (centres de localité).
+type ListingWithLocation = ListingDetail & {
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+};
+
+function parseCoordinate(
+  value: number | string | null | undefined,
+  limit: number,
+): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
+}
+
 
 export default function ListingDetailPage() {
   const { listingId } = useParams();
@@ -13,7 +31,7 @@ export default function ListingDetailPage() {
 
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [listing, setListing] = useState<ListingDetail | null>(null);
+  const [listing, setListing] = useState<ListingWithLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -49,7 +67,7 @@ export default function ListingDetailPage() {
       return;
     }
 
-    apiRequest<ListingDetail>(
+    apiRequest<ListingWithLocation>(
       `/listings/${listingId}`,
       {
         signal: controller.signal,
@@ -88,6 +106,9 @@ export default function ListingDetailPage() {
 
   const photo =
     images.find(image => image.id === selectedImage) ?? images[0];
+
+  const publicLatitude = parseCoordinate(listing?.latitude, 90);
+  const publicLongitude = parseCoordinate(listing?.longitude, 180);
 
   const conditions: Record<string, string> = {
     NEW: "Neuf",
@@ -524,6 +545,18 @@ export default function ListingDetailPage() {
               {listing.description ||
                 "Aucune description renseignée."}
             </p>
+
+            {publicLatitude !== null && publicLongitude !== null && (
+              <section className="listing-detail__location" aria-label="Localisation approximative">
+                <h2>Localisation approximative</h2>
+                <p>La zone indiquée est indicative. Contactez le vendeur pour convenir d'un lieu de rencontre.</p>
+                <ApproximateLocationMap
+                  latitude={publicLatitude}
+                  longitude={publicLongitude}
+                  radiusMeters={2500}
+                />
+              </section>
+            )}
           </section>
         </article>
       )}

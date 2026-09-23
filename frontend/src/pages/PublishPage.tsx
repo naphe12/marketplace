@@ -1271,76 +1271,28 @@ function PublishEditor({
         {step === 4 && (
           <PriceLocationStep
             price={price}
+            currency={currency}
+            priceType={priceType}
+            allowOffers={allowOffers}
 
-            currency={
-              currency
-            }
+            provinceId={provinceId}
+            communeId={communeId}
+            zoneId={zoneId}
+            localityId={localityId}
 
-            priceType={
-              priceType
-            }
+            latitude={approximateLatitude}
+            longitude={approximateLongitude}
 
-            allowOffers={
-              allowOffers
-            }
-
-            provinceId={
-              provinceId
-            }
-
-            communeId={
-              communeId
-            }
-
-            zoneId={
-              zoneId
-            }
-
-            localityId={
-              localityId
-            }
-
-            
-
-            onPriceChange={
-              setPrice
-            }
-
-            onCurrencyChange={
-              setCurrency
-            }
-
-            onPriceTypeChange={
-              setPriceType
-            }
-
-            onAllowOffersChange={
-              setAllowOffers
-            }
-
-            onProvinceChange={
-              setProvinceId
-            }
-
-            onCommuneChange={
-              setCommuneId
-            }
-
-            onZoneChange={
-              setZoneId
-            }
-
-            onLocalityChange={
-              setLocalityId
-            }
-
-           
-
-            onLocationResolved={
-              handleLocationResolved
-            }
-
-            
+            // Conservez toutes les propriétés on... existantes
+            onPriceChange={setPrice}
+            onCurrencyChange={setCurrency}
+            onPriceTypeChange={setPriceType}
+            onAllowOffersChange={setAllowOffers}
+            onProvinceChange={setProvinceId}
+            onCommuneChange={setCommuneId}
+            onZoneChange={setZoneId}
+            onLocalityChange={setLocalityId}
+            onLocationResolved={handleLocationResolved}
           />
         )}
 

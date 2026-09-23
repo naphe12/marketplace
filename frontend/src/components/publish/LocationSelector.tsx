@@ -16,10 +16,6 @@ import type {
   AdministrativeArea,
 } from "../../types/location";
 
-import ApproximateLocationMap
-  from "../location/ApproximateLocationMap";
-
-
 type Props = {
   provinceId: string;
   communeId: string;
@@ -245,39 +241,46 @@ export default function LocationSelector({
     null;
 
 
-  /*
-   * Pour la carte :
-   * on cherche les coordonnées du niveau
-   * le plus précis disponible.
-   */
+  // La carte utilise uniquement le centre de la localité effectivement
+  // sélectionnée. Pas de GPS personnel, pas de repli silencieux vers
+  // le centre d'une province lorsqu'un quartier n'est pas géocodé.
   const coordinates =
-    [
-      selectedLocality,
-      selectedZone,
-      selectedCommune,
-      selectedProvince,
-    ].find(
-      area =>
-        area?.latitude != null &&
-        area?.longitude != null,
-    ) ?? null;
+    selectedArea?.latitude != null &&
+    selectedArea?.longitude != null &&
+    Number.isFinite(Number(selectedArea.latitude)) &&
+    Number.isFinite(Number(selectedArea.longitude)) &&
+    Math.abs(Number(selectedArea.latitude)) <= 90 &&
+    Math.abs(Number(selectedArea.longitude)) <= 180
+      ? {
+          latitude: Number(selectedArea.latitude),
+          longitude: Number(selectedArea.longitude),
+        }
+      : null;
 
+  // Lors de la restauration d'un brouillon, les listes enfants chargent
+  // de façon asynchrone : attendre leur chargement avant de notifier
+  // PublishPage, sinon ses coordonnées sauvegardées seraient effacées.
+  const hierarchyPending = Boolean(
+    (provinceId && !selectedProvince) ||
+    (communeId && !selectedCommune) ||
+    (zoneId && !selectedZone) ||
+    (localityId && !selectedLocality && loadingLocalities)
+  );
 
   useEffect(() => {
+    if (hierarchyPending) return;
+
     onLocationResolved({
-      administrativeAreaId:
-        selectedArea?.id ?? null,
-
-      latitude:
-        coordinates?.latitude ?? null,
-
-      longitude:
-        coordinates?.longitude ?? null,
+      administrativeAreaId: selectedArea?.id ?? null,
+      latitude: coordinates?.latitude ?? null,
+      longitude: coordinates?.longitude ?? null,
     });
   }, [
+    hierarchyPending,
     selectedArea?.id,
     coordinates?.latitude,
     coordinates?.longitude,
+    onLocationResolved,
   ]);
 
 
@@ -522,25 +525,6 @@ export default function LocationSelector({
       )}
 
 
-      {coordinates && (
-        <div className="location-map-wrapper">
-          <ApproximateLocationMap
-            latitude={
-              coordinates.latitude!
-            }
-            longitude={
-              coordinates.longitude!
-            }
-            radius={2500}
-          />
-
-          <p className="location-privacy">
-            La carte indique une zone
-            approximative et non l'adresse
-            exacte du vendeur.
-          </p>
-        </div>
-      )}
 
     </div>
   );
