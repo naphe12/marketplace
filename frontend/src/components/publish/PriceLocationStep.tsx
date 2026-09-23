@@ -44,6 +44,15 @@ export default function PriceLocationStep({
 
   const radiusMeters = localityId ? 800 : zoneId ? 2500 : communeId ? 6000 : 12000;
 
+  console.log("LOCALISATION", {
+    provinceId,
+    communeId,
+    zoneId,
+    localityId,
+    latitude,
+    longitude,
+  });
+
   return (
     <section className="publish-panel">
       <div className="publish-panel__heading">
