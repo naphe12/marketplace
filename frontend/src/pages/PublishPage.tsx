@@ -1300,6 +1300,8 @@ function PublishEditor({
               localityId
             }
 
+            
+
             onPriceChange={
               setPrice
             }
@@ -1332,9 +1334,13 @@ function PublishEditor({
               setLocalityId
             }
 
+           
+
             onLocationResolved={
               handleLocationResolved
             }
+
+            
           />
         )}
 

@@ -1,0 +1,28 @@
+
+.approximate-location {
+  margin-top: 20px;
+}
+
+.approximate-location__map {
+  overflow: hidden;
+  border: 1px solid #dce7e5;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 5%);
+}
+
+.approximate-location__leaflet {
+  width: 100%;
+  height: 340px;
+}
+
+.approximate-location__note {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .approximate-location__leaflet {
+    height: 280px;
+  }
+}
