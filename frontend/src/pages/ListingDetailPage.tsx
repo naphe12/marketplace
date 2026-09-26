@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -7,6 +7,7 @@ import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
 import type { ReputationProfile, UserReview } from "../types/reputation";
 import ApproximateLocationMap from "../components/location/ApproximateLocationMap";
+import { Share2 } from "lucide-react";
 
 // Ne présume pas que types/listing.ts comporte déjà ces champs :
 // l'API publique doit effectivement les renvoyer (centres de localité).
@@ -55,6 +56,13 @@ export default function ListingDetailPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
+
+  const shareUrl = useMemo(() => {
+    if (!listingId || typeof window === "undefined") return "";
+
+    return `${window.location.origin}/listings/${listingId}`;
+  }, [listingId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -75,6 +83,7 @@ export default function ListingDetailPage() {
     setReportOpen(false);
     setReportSuccess(false);
     setReportError(null);
+    setShareStatus(null);
 
     if (!listingId) {
       setError("Annonce introuvable.");
@@ -284,6 +293,7 @@ export default function ListingDetailPage() {
     setReportOpen(false);
     setReportSuccess(false);
     setReportError(null);
+    setShareStatus(null);
 
     navigate(
       `/messages/${conversationId}`,
@@ -338,6 +348,35 @@ export default function ListingDetailPage() {
     }
   }
 
+  async function shareListing() {
+    if (!listing || !shareUrl) return;
+
+    const title = listing.title;
+    const text = `Regarde cette annonce sur MarketBI : ${listing.title}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text,
+          url: shareUrl,
+        });
+        setShareStatus("Lien prêt à partager.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("Lien copié. Vous pouvez le coller dans WhatsApp ou ailleurs.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      setShareStatus("Impossible de partager automatiquement. Copiez le lien depuis la barre d’adresse.");
+    }
+  }
+
+
   const numericOfferAmount =
     Number(offerAmount);
 
@@ -389,6 +428,21 @@ export default function ListingDetailPage() {
 
       {!loading && listing && (
         <div className="listing-detail__owner-actions">
+          <button
+            type="button"
+            className="secondary-button listing-share-button"
+            onClick={() => void shareListing()}
+          >
+            <Share2 size={17} />
+            Partager
+          </button>
+
+          {shareStatus && (
+            <p className="listing-share-status" role="status">
+              {shareStatus}
+            </p>
+          )}
+
           {authLoading ? (
             <p role="status">
               Vérification de la connexion…

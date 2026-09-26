@@ -8903,3 +8903,104 @@ iframe {
     height: 520px;
   }
 }
+
+
+/* =================================
+   AUTH MOBILE VISIBILITY FIX
+   ================================= */
+
+.auth-page {
+  min-height: 100dvh;
+  align-items: stretch;
+  justify-content: start;
+  padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.auth-page--split {
+  align-content: start;
+  justify-items: stretch;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: none;
+  padding: 18px;
+}
+
+.auth-card h1 {
+  margin: 16px 0 18px;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.auth-mode-switch {
+  position: sticky;
+  top: max(8px, env(safe-area-inset-top));
+  z-index: 2;
+  width: 100%;
+}
+
+.auth-mode-switch__item {
+  min-width: 0;
+  min-height: 42px;
+  color: #344054;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.auth-mode-switch__item--active {
+  color: var(--color-primary-dark);
+  background: #fff;
+}
+
+.auth-card > .primary-button,
+.auth-card > .inline-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+@media (max-width: 680px) {
+  .auth-onboarding-card {
+    display: none;
+  }
+}
+
+@media (min-width: 681px) {
+  .auth-page {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .auth-card {
+    max-width: 460px;
+    padding: 24px;
+  }
+}
+
+
+/* Listing share */
+.listing-share-button {
+  flex: 0 0 auto;
+}
+
+.listing-share-status {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border: 1px solid #b7e5df;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .listing-detail__owner-actions,
+  .listing-share-button,
+  .listing-share-status {
+    width: 100%;
+  }
+}
