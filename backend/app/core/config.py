@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     S3_REGION: str = "auto"
 
     SIMULATED_PAYMENTS_ENABLED: bool = False
+    PAYMENT_PROVIDER_BASE_URL: str | None = None
+    PAYMENT_PROVIDER_API_KEY: str | None = None
+    PAYMENT_PROVIDER_WEBHOOK_SECRET: str | None = None
+
+    SMS_PROVIDER_BASE_URL: str | None = None
+    SMS_PROVIDER_API_KEY: str | None = None
+    SMS_SENDER_NAME: str = "Marketplace"
+    PASSWORD_RESET_TOKEN_MINUTES: int = 15
 
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60

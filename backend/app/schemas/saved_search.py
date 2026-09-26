@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.listing import ListingCardResponse
+
 
 class SavedSearchCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -26,3 +28,12 @@ class SavedSearchResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SavedSearchMatchesResponse(BaseModel):
+    saved_search: SavedSearchResponse
+    items: list[ListingCardResponse]
+    total: int
+    offset: int
+    limit: int
+    has_more: bool

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.dialects.postgresql import insert
 from app.models.listing import ListingAttributeValue
 from app.schemas.listing import ListingAttributeValueUpsert
@@ -119,6 +121,7 @@ class ListingRepository:
         price_type: str | None = None,
 
         allow_offers: bool | None = None,
+        published_after: datetime | None = None,
 
         sort: str = "newest",
 
@@ -205,6 +208,12 @@ class ListingRepository:
             filters.append(
                 Listing.allow_offers
                 == allow_offers
+            )
+
+        if published_after is not None:
+            filters.append(
+                Listing.published_at
+                >= published_after
             )
 
         # ---------------------------------

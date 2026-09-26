@@ -28,7 +28,7 @@ export default function DataTable<T>({
         <thead>
           <tr>
             {columns.map(column => (
-              <th key={column.key}>
+              <th key={column.key} scope="col">
                 {column.label}
               </th>
             ))}
@@ -37,9 +37,11 @@ export default function DataTable<T>({
 
         <tbody>
           {rows.length === 0 ? (
-            <tr>
+            <tr className="admin-table-empty-row">
               <td colSpan={columns.length}>
-                {emptyLabel}
+                <div className="admin-table-empty">
+                  {emptyLabel}
+                </div>
               </td>
             </tr>
           ) : (

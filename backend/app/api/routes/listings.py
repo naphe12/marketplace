@@ -5,7 +5,7 @@ from app.schemas.listing import ListingImageUpdate
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -30,7 +30,10 @@ from decimal import Decimal
 from app.schemas.listing import (
     ListingSearchResponse,
 )
-from app.schemas.listing_stats import ListingStatsResponse
+from app.schemas.listing_stats import (
+    ListingStatsResponse,
+    SellerDashboardResponse,
+)
 
 from app.schemas.upload import (
     ImageUploadPrepareRequest,
@@ -116,6 +119,108 @@ async def my_listing_stats(
         }
         for listing_id in listing_ids
     ]
+
+
+@router.get(
+    "/mine/dashboard",
+    response_model=SellerDashboardResponse,
+)
+async def my_seller_dashboard(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing_rows = await db.execute(
+        select(
+            func.count(Listing.id),
+            func.count(
+                case(
+                    (
+                        (Listing.status == "ACTIVE")
+                        & (
+                            (Listing.expires_at.is_(None))
+                            | (Listing.expires_at > func.now())
+                        ),
+                        1,
+                    )
+                )
+            ),
+            func.count(
+                case(
+                    (
+                        (Listing.status == "EXPIRED")
+                        | (
+                            Listing.expires_at.is_not(None)
+                            & (Listing.expires_at <= func.now())
+                        ),
+                        1,
+                    )
+                )
+            ),
+            func.count(
+                case((Listing.status == "DRAFT", 1))
+            ),
+        ).where(
+            Listing.seller_id == current_user.id,
+            Listing.deleted_at.is_(None),
+        )
+    )
+    total, active, expired, draft = listing_rows.one()
+    total = int(total or 0)
+    active = int(active or 0)
+    expired = int(expired or 0)
+    draft = int(draft or 0)
+
+    listing_ids = (
+        await db.scalars(
+            select(Listing.id).where(
+                Listing.seller_id == current_user.id,
+                Listing.deleted_at.is_(None),
+            )
+        )
+    ).all()
+
+    metrics = {
+        "views": 0,
+        "favorites": 0,
+        "conversations": 0,
+    }
+
+    if listing_ids:
+        metrics["views"] = int(
+            await db.scalar(
+                select(func.count(ListingView.id)).where(
+                    ListingView.listing_id.in_(listing_ids)
+                )
+            )
+            or 0
+        )
+        metrics["favorites"] = int(
+            await db.scalar(
+                select(func.count(Favorite.id)).where(
+                    Favorite.listing_id.in_(listing_ids)
+                )
+            )
+            or 0
+        )
+        metrics["conversations"] = int(
+            await db.scalar(
+                select(func.count(Conversation.id)).where(
+                    Conversation.listing_id.in_(listing_ids)
+                )
+            )
+            or 0
+        )
+
+    return {
+        "listings": {
+            "active": active,
+            "expired": expired,
+            "draft": draft,
+            "other": max(total - active - expired - draft, 0),
+            "total": total,
+        },
+        "metrics": metrics,
+    }
 
 
 @router.get(
