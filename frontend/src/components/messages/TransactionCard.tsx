@@ -1,3 +1,16 @@
+import {
+    Star,
+} from "lucide-react";
+
+import {
+    useState,
+    type FormEvent,
+} from "react";
+
+import {
+    apiRequest,
+} from "../../api/client";
+
 import type { MarketplaceTransaction } from "../../types/transaction";
 
 type TransactionCardProps = {
@@ -24,6 +37,21 @@ export default function TransactionCard({
     loading = false,
     onConfirm,
 }: TransactionCardProps) {
+    const [reviewRating, setReviewRating] =
+        useState(5);
+
+    const [reviewComment, setReviewComment] =
+        useState("");
+
+    const [reviewLoading, setReviewLoading] =
+        useState(false);
+
+    const [reviewSent, setReviewSent] =
+        useState(false);
+
+    const [reviewError, setReviewError] =
+        useState("");
+
     const isBuyer =
         transaction.buyer_id === currentUserId;
 
@@ -47,11 +75,43 @@ export default function TransactionCard({
             ? buyerConfirmed
             : sellerConfirmed;
 
+    async function submitReview(event: FormEvent) {
+        event.preventDefault();
+
+        setReviewLoading(true);
+        setReviewError("");
+
+        try {
+            await apiRequest(
+                `/transactions/${transaction.id}/reviews`,
+                {
+                    method: "POST",
+                    authenticated: true,
+                    body: JSON.stringify({
+                        rating: reviewRating,
+                        comment: reviewComment.trim() || null,
+                    }),
+                },
+            );
+
+            setReviewSent(true);
+            setReviewComment("");
+        } catch (cause) {
+            setReviewError(
+                cause instanceof Error
+                    ? cause.message
+                    : "Impossible d'envoyer votre avis.",
+            );
+        } finally {
+            setReviewLoading(false);
+        }
+    }
+
     return (
         <div className="transaction-card">
             <div className="transaction-card__header">
                 <div>
-                    <strong>🧾 Transaction</strong>
+                    <strong>Transaction</strong>
                     <div className="transaction-card__number">
                         {transaction.transaction_number}
                     </div>
@@ -121,6 +181,53 @@ export default function TransactionCard({
                                     : "Confirmer"}
                     </button>
                 )}
+
+            {completed && !reviewSent && (
+                <form className="transaction-review-form" onSubmit={submitReview}>
+                    <strong>Laisser un avis</strong>
+
+                    <div className="transaction-review-stars" aria-label="Note">
+                        {[1, 2, 3, 4, 5].map(value => (
+                            <button
+                                key={value}
+                                type="button"
+                                className={value <= reviewRating ? "transaction-review-star transaction-review-star--active" : "transaction-review-star"}
+                                onClick={() => setReviewRating(value)}
+                                aria-label={`${value} sur 5`}
+                            >
+                                <Star size={18} fill={value <= reviewRating ? "currentColor" : "none"} />
+                            </button>
+                        ))}
+                    </div>
+
+                    <textarea
+                        value={reviewComment}
+                        onChange={event => setReviewComment(event.target.value)}
+                        placeholder="Comment s'est passée la transaction ?"
+                        maxLength={2000}
+                    />
+
+                    {reviewError && (
+                        <p className="form-error" role="alert">
+                            {reviewError}
+                        </p>
+                    )}
+
+                    <button
+                        type="submit"
+                        className="transaction-card__confirm-button"
+                        disabled={reviewLoading}
+                    >
+                        {reviewLoading ? "Envoi..." : "Envoyer l'avis"}
+                    </button>
+                </form>
+            )}
+
+            {reviewSent && (
+                <div className="transaction-card__success">
+                    Merci, votre avis a été enregistré.
+                </div>
+            )}
         </div>
     );
 }

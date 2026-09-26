@@ -2,12 +2,16 @@ import {
   ArrowLeft,
   CheckCircle2,
   CreditCard,
+  Loader2,
+  Smartphone,
 } from "lucide-react";
+
 import {
   useEffect,
   useMemo,
   useState,
 } from "react";
+
 import {
   Link,
   useNavigate,
@@ -35,11 +39,42 @@ type PublicationOrder = {
   status: string;
 };
 
-type SimulatedPaymentResult = {
+type BillingPayment = {
+  id: string;
+  billing_order_id: string;
+  amount: string;
+  currency: string;
+  payment_method: string;
+  provider: string | null;
   status: string;
+  paid_at: string | null;
+};
+
+type SimulatedPaymentResult = {
+  status?: string;
+  payment_status?: string;
+  order_status?: string;
   listing_status: string;
   expires_at: string | null;
 };
+
+const paymentProviders = [
+  {
+    method: "MOBILE_MONEY",
+    provider: "LUMICASH",
+    label: "Lumicash",
+  },
+  {
+    method: "MOBILE_MONEY",
+    provider: "ECOCASH",
+    label: "EcoCash",
+  },
+  {
+    method: "CARD",
+    provider: "CARD",
+    label: "Carte bancaire",
+  },
+];
 
 
 export default function ListingCheckoutPage() {
@@ -52,9 +87,13 @@ export default function ListingCheckoutPage() {
   const [packages, setPackages] = useState<ListingPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingPayment, setCreatingPayment] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<PublicationOrder | null>(null);
+  const [payment, setPayment] = useState<BillingPayment | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState(paymentProviders[0]);
+
 
   useEffect(() => {
     let mounted = true;
@@ -85,10 +124,12 @@ export default function ListingCheckoutPage() {
     };
   }, []);
 
+
   const selectedPackage = useMemo(
     () => packages.find(item => item.id === packageId),
     [packageId, packages],
   );
+
 
   async function createOrder() {
     if (!listingId || !packageId) {
@@ -97,6 +138,7 @@ export default function ListingCheckoutPage() {
 
     setSubmitting(true);
     setError("");
+    setPayment(null);
 
     try {
       const result = await apiRequest<PublicationOrder>(
@@ -122,8 +164,43 @@ export default function ListingCheckoutPage() {
     }
   }
 
-  async function payOrder() {
-    if (!listingId || !order) {
+
+  async function createPayment() {
+    if (!order) {
+      return;
+    }
+
+    setCreatingPayment(true);
+    setError("");
+
+    try {
+      const result = await apiRequest<BillingPayment>(
+        `/billing/orders/${order.id}/payments`,
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            payment_method: selectedProvider.method,
+            provider: selectedProvider.provider,
+          }),
+        },
+      );
+
+      setPayment(result);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible d'initialiser le paiement.",
+      );
+    } finally {
+      setCreatingPayment(false);
+    }
+  }
+
+
+  async function confirmTestPayment() {
+    if (!listingId || !payment) {
       return;
     }
 
@@ -132,14 +209,18 @@ export default function ListingCheckoutPage() {
 
     try {
       const result = await apiRequest<SimulatedPaymentResult>(
-        `/billing/orders/${order.id}/simulate-payment`,
+        `/billing/payments/${payment.id}/simulate-success`,
         {
           method: "POST",
           authenticated: true,
         },
       );
 
-      if (result.status === "PAID") {
+      if (
+        result.payment_status === "SUCCESS" ||
+        result.order_status === "PAID" ||
+        result.status === "PAID"
+      ) {
         navigate(`/listings/${listingId}`);
       }
     } catch (cause) {
@@ -153,6 +234,7 @@ export default function ListingCheckoutPage() {
     }
   }
 
+
   return (
     <div className="page">
       <Link
@@ -163,7 +245,7 @@ export default function ListingCheckoutPage() {
         Changer de package
       </Link>
 
-      <div className="checkout-panel">
+      <div className="checkout-panel checkout-flow-panel">
         <div>
           <span className="checkout-icon">
             <CreditCard size={22} />
@@ -172,8 +254,9 @@ export default function ListingCheckoutPage() {
           <h1>Paiement publication</h1>
 
           <p>
-            Confirmez votre package puis simulez le paiement pour
-            publier votre annonce.
+            Créez la commande, choisissez le moyen de paiement,
+            puis confirmez le paiement. La confirmation reste en mode test
+            tant qu'aucun provider externe n'est branché côté backend.
           </p>
         </div>
 
@@ -193,7 +276,7 @@ export default function ListingCheckoutPage() {
           <div className="checkout-summary">
             <span>{selectedPackage.name}</span>
             <strong>
-              {Number(selectedPackage.price).toLocaleString("fr-FR")}{" "}
+              {Number(selectedPackage.price).toLocaleString("fr-FR")} {" "}
               {selectedPackage.currency}
             </strong>
             <small>
@@ -208,42 +291,118 @@ export default function ListingCheckoutPage() {
           </p>
         )}
 
-        {order ? (
-          <div className="checkout-success">
-            <CheckCircle2 size={22} />
+        <div className="checkout-steps">
+          <section className="checkout-step">
+            <span className="checkout-step__number">1</span>
             <div>
-              <strong>Commande créée</strong>
-              <span>
-                {Number(order.amount).toLocaleString("fr-FR")}{" "}
-                {order.currency} - {order.status}
-              </span>
+              <strong>Commande</strong>
+              <p>Réservez le package choisi pour cette annonce.</p>
             </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="primary-button"
-            disabled={submitting || loading || !selectedPackage}
-            onClick={() => void createOrder()}
-          >
-            {submitting
-              ? "Création..."
-              : "Créer la commande"}
-          </button>
-        )}
 
-        {order && (
-          <button
-            type="button"
-            className="primary-button"
-            disabled={paying}
-            onClick={() => void payOrder()}
-          >
-            {paying
-              ? "Paiement..."
-              : "Payer"}
-          </button>
-        )}
+            {order ? (
+              <div className="checkout-success">
+                <CheckCircle2 size={22} />
+                <div>
+                  <strong>Commande créée</strong>
+                  <span>
+                    {Number(order.amount).toLocaleString("fr-FR")} {" "}
+                    {order.currency} - {order.status}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="primary-button inline-button"
+                disabled={submitting || loading || !selectedPackage}
+                onClick={() => void createOrder()}
+              >
+                {submitting && <Loader2 size={16} />}
+                {submitting
+                  ? "Création..."
+                  : "Créer la commande"}
+              </button>
+            )}
+          </section>
+
+          <section className="checkout-step">
+            <span className="checkout-step__number">2</span>
+            <div>
+              <strong>Moyen de paiement</strong>
+              <p>Sélectionnez le canal à enregistrer pour la commande.</p>
+            </div>
+
+            <div className="payment-method-grid">
+              {paymentProviders.map(provider => (
+                <button
+                  key={`${provider.method}-${provider.provider}`}
+                  type="button"
+                  className={
+                    selectedProvider.provider === provider.provider
+                      ? "payment-method-card payment-method-card--active"
+                      : "payment-method-card"
+                  }
+                  disabled={Boolean(payment)}
+                  onClick={() => setSelectedProvider(provider)}
+                >
+                  {provider.method === "CARD" ? (
+                    <CreditCard size={18} />
+                  ) : (
+                    <Smartphone size={18} />
+                  )}
+                  <span>{provider.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {payment ? (
+              <div className="checkout-success">
+                <CheckCircle2 size={22} />
+                <div>
+                  <strong>Paiement initialisé</strong>
+                  <span>
+                    {payment.provider ?? payment.payment_method} - {payment.status}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="primary-button inline-button"
+                disabled={!order || creatingPayment}
+                onClick={() => void createPayment()}
+              >
+                {creatingPayment && <Loader2 size={16} />}
+                {creatingPayment
+                  ? "Initialisation..."
+                  : "Initialiser le paiement"}
+              </button>
+            )}
+          </section>
+
+          <section className="checkout-step">
+            <span className="checkout-step__number">3</span>
+            <div>
+              <strong>Confirmation</strong>
+              <p>
+                En production, cette étape sera déclenchée par le callback
+                du provider. Pour l'instant, elle valide le paiement test.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="primary-button inline-button"
+              disabled={!payment || paying}
+              onClick={() => void confirmTestPayment()}
+            >
+              {paying && <Loader2 size={16} />}
+              {paying
+                ? "Confirmation..."
+                : "Confirmer le paiement test"}
+            </button>
+          </section>
+        </div>
       </div>
     </div>
   );

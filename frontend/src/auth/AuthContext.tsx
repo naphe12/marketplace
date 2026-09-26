@@ -28,6 +28,13 @@ type AuthContextType = {
     phone: string,
     password: string,
   ) => Promise<void>;
+  register: (data: {
+    phone: string;
+    email: string | null;
+    password: string;
+    first_name: string | null;
+    last_name: string | null;
+  }) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 };
@@ -110,6 +117,36 @@ export function AuthProvider({
   }
 
 
+  async function register(data: {
+    phone: string;
+    email: string | null;
+    password: string;
+    first_name: string | null;
+    last_name: string | null;
+  }) {
+    const result =
+      await apiRequest<{
+        user: User;
+        access_token: string;
+        token_type: string;
+      }>(
+        "/auth/register",
+        {
+          method: "POST",
+
+          body: JSON.stringify(data),
+        },
+      );
+
+    localStorage.setItem(
+      "access_token",
+      result.access_token,
+    );
+
+    setUser(result.user);
+  }
+
+
   function logout() {
     localStorage.removeItem(
       "access_token",
@@ -135,6 +172,7 @@ export function AuthProvider({
         user,
         loading,
         login,
+        register,
         logout,
         refreshUser,
       }}

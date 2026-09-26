@@ -685,11 +685,21 @@ async def admin_send_notification(
 
 @router.get("/audit", response_model=AdminAuditLogListResponse)
 async def admin_audit_logs(
+    target_type: str | None = None,
+    target_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
+    query = select(AuditLog)
+
+    if target_type:
+        query = query.where(AuditLog.target_type == target_type.upper())
+
+    if target_id:
+        query = query.where(AuditLog.target_id == target_id)
+
     result = await db.execute(
-        select(AuditLog).order_by(AuditLog.created_at.desc()).limit(200)
+        query.order_by(AuditLog.created_at.desc()).limit(200)
     )
     return {"items": list(result.scalars().all())}
 

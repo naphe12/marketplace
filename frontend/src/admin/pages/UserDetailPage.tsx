@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiRequest } from "../../api/client";
+import AdminEntityAuditPanel from "../components/AdminEntityAuditPanel";
+import AdminNotesPanel from "../components/AdminNotesPanel";
 import StatCard from "../components/StatCard";
 import type { AdminUser360 } from "../types";
 
@@ -33,6 +35,8 @@ export default function UserDetailPage() {
         <StatCard label="Sanctions" value={user.sanctions_count} detail="Actions moderation" icon={FileText} />
         <StatCard label="Audit" value={user.audit_count} detail="Actions admin" icon={User} />
       </div>
+      <AdminNotesPanel targetType="USER" targetId={user.id} />
+      <AdminEntityAuditPanel targetType="USER" targetId={user.id} />
     </section>
   );
 }

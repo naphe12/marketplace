@@ -5,11 +5,13 @@ import type {
 type Props = {
   message: Message;
   mine: boolean;
+  onReport?: (message: Message) => void;
 };
 
 export default function MessageBubble({
   message,
   mine,
+  onReport,
 }: Props) {
   const createdAt =
     new Date(message.created_at);
@@ -40,6 +42,11 @@ export default function MessageBubble({
               hour: "2-digit",
               minute: "2-digit",
             },
+          )}
+          {!mine && onReport && (
+            <button type="button" className="message-report-button" onClick={() => onReport(message)}>
+              Signaler
+            </button>
           )}
         </div>
       </div>

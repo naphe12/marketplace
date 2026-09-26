@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { apiRequest } from "../../api/client";
+import AdminEntityAuditPanel from "../components/AdminEntityAuditPanel";
+import AdminNotesPanel from "../components/AdminNotesPanel";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 
@@ -96,6 +98,8 @@ export default function ListingAdminDetailPage() {
           <Link className="text-button" to={`/admin/users/${listing.seller_id}`}>Voir vendeur</Link>
         </section>
       </div>
+      <AdminNotesPanel targetType="LISTING" targetId={listing.id} />
+      <AdminEntityAuditPanel targetType="LISTING" targetId={listing.id} />
     </section>
   );
 }

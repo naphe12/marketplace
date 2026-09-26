@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import PhotoUploader from "../components/publish/PhotoUploader";
 import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
+import type { ReputationProfile, UserReview } from "../types/reputation";
 import ApproximateLocationMap from "../components/location/ApproximateLocationMap";
 
 // Ne présume pas que types/listing.ts comporte déjà ces champs :
@@ -36,6 +37,8 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [sellerReputation, setSellerReputation] = useState<ReputationProfile | null>(null);
+  const [sellerReviews, setSellerReviews] = useState<UserReview[]>([]);
 
   const [interestLoading, setInterestLoading] = useState(false);
 
@@ -45,6 +48,13 @@ export default function ListingDetailPage() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerLoading, setOfferLoading] = useState(false);
   const [offerError, setOfferError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportTargetType, setReportTargetType] = useState<"LISTING" | "USER">("LISTING");
+  const [reportReason, setReportReason] = useState("FRAUD");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,12 +64,17 @@ export default function ListingDetailPage() {
     setLoading(true);
     setError(null);
     setListing(null);
+    setSellerReputation(null);
+    setSellerReviews([]);
     setSelectedImage(null);
 
     setConversationId(null);
     setOfferModalOpen(false);
     setOfferAmount("");
     setOfferError(null);
+    setReportOpen(false);
+    setReportSuccess(false);
+    setReportError(null);
 
     if (!listingId) {
       setError("Annonce introuvable.");
@@ -77,6 +92,40 @@ export default function ListingDetailPage() {
         if (controller.signal.aborted) return;
 
         setListing(result);
+
+        void apiRequest(
+          `/listings/${result.id}/view`,
+          {
+            method: "POST",
+            signal: controller.signal,
+          },
+        ).catch(() => undefined);
+
+        void apiRequest<ReputationProfile>(
+          `/reputation/users/${result.seller_id}`,
+          {
+            signal: controller.signal,
+          },
+        )
+          .then(profile => {
+            if (!controller.signal.aborted) {
+              setSellerReputation(profile);
+            }
+          })
+          .catch(() => undefined);
+
+        void apiRequest<UserReview[]>(
+          `/transactions/users/${result.seller_id}/reviews`,
+          {
+            signal: controller.signal,
+          },
+        )
+          .then(reviews => {
+            if (!controller.signal.aborted) {
+              setSellerReviews(reviews.slice(0, 3));
+            }
+          })
+          .catch(() => undefined);
 
         setSelectedImage(
           result.images.find(image => image.is_primary)?.id ?? null,
@@ -232,6 +281,9 @@ export default function ListingDetailPage() {
     setOfferModalOpen(false);
     setOfferAmount("");
     setOfferError(null);
+    setReportOpen(false);
+    setReportSuccess(false);
+    setReportError(null);
 
     navigate(
       `/messages/${conversationId}`,
@@ -247,6 +299,43 @@ export default function ListingDetailPage() {
   function handleCloseOfferModal() {
     setOfferModalOpen(false);
     setOfferError(null);
+  }
+
+
+  async function submitReport() {
+    if (!listing) {
+      return;
+    }
+
+    setReportLoading(true);
+    setReportError(null);
+
+    try {
+      await apiRequest(
+        "/reports",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            target_type: reportTargetType,
+            target_id: reportTargetType === "USER" ? listing.seller_id : listing.id,
+            reason: reportReason,
+            description: reportDescription.trim() || null,
+          }),
+        },
+      );
+
+      setReportSuccess(true);
+      setReportDescription("");
+    } catch (cause) {
+      setReportError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible d'envoyer le signalement.",
+      );
+    } finally {
+      setReportLoading(false);
+    }
   }
 
   const numericOfferAmount =
@@ -347,18 +436,41 @@ export default function ListingDetailPage() {
                 : "Modifier l’annonce"}
             </button>
           ) : (
-            <button
-              type="button"
-              className="primary-button"
-              disabled={interestLoading}
-              onClick={() =>
-                void handleInterest()
-              }
-            >
-              {interestLoading
-                ? "Ouverture..."
-                : "Je suis intéressé"}
-            </button>
+            <div className="listing-detail__buyer-actions">
+              <button
+                type="button"
+                className="primary-button"
+                disabled={interestLoading}
+                onClick={() =>
+                  void handleInterest()
+                }
+              >
+                {interestLoading
+                  ? "Ouverture..."
+                  : "Je suis intéressé"}
+              </button>
+
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setReportTargetType("LISTING");
+                  setReportOpen(true);
+                }}
+              >
+                Signaler l'annonce
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setReportTargetType("USER");
+                  setReportOpen(true);
+                }}
+              >
+                Signaler le vendeur
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -424,6 +536,40 @@ export default function ListingDetailPage() {
                 Les modifications ont été
                 enregistrées.
               </p>
+            )}
+
+
+            {sellerReputation && (
+              <section className="seller-reputation-card" aria-label="Réputation vendeur">
+                <div>
+                  <span>Vendeur</span>
+                  <strong>
+                    {sellerReputation.average_rating
+                      ? `${Number(sellerReputation.average_rating).toFixed(1)} / 5`
+                      : "Pas encore noté"}
+                  </strong>
+                  <small>
+                    {sellerReputation.review_count} avis · {sellerReputation.completed_as_seller} vente{sellerReputation.completed_as_seller > 1 ? "s" : ""} terminée{sellerReputation.completed_as_seller > 1 ? "s" : ""}
+                  </small>
+                </div>
+
+                <div className="seller-trust-badges">
+                  <span>{sellerReputation.trust_level}</span>
+                  {sellerReputation.phone_verified && <span>Téléphone vérifié</span>}
+                  {sellerReputation.identity_verified && <span>Identité vérifiée</span>}
+                </div>
+
+                {sellerReviews.length > 0 && (
+                  <div className="seller-review-list">
+                    {sellerReviews.map(review => (
+                      <blockquote key={review.id}>
+                        <strong>{review.rating}/5</strong>
+                        <p>{review.comment ?? "Avis sans commentaire."}</p>
+                      </blockquote>
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
 
             {editing &&
@@ -559,6 +705,71 @@ export default function ListingDetailPage() {
             )}
           </section>
         </article>
+      )}
+
+
+      {reportOpen && listing && (
+        <div
+          className="offer-modal-backdrop"
+          onMouseDown={event => {
+            if (event.target === event.currentTarget) {
+              setReportOpen(false);
+            }
+          }}
+        >
+          <div className="offer-modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+            <button
+              type="button"
+              className="offer-modal__close"
+              onClick={() => setReportOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+
+            <h2 id="report-modal-title">{reportTargetType === "USER" ? "Signaler ce vendeur" : "Signaler cette annonce"}</h2>
+            <p className="offer-modal__listing-title">{listing.title}</p>
+
+            {reportSuccess ? (
+              <div className="checkout-success">
+                <strong>Signalement envoyé</strong>
+                <span>Merci, l'équipe de modération va l'examiner.</span>
+              </div>
+            ) : (
+              <form className="report-form" onSubmit={event => {
+                event.preventDefault();
+                void submitReport();
+              }}>
+                <label className="form-field">
+                  <span>Motif</span>
+                  <select value={reportReason} onChange={event => setReportReason(event.target.value)}>
+                    <option value="FRAUD">Fraude ou arnaque</option>
+                    <option value="PROHIBITED_ITEM">Article interdit</option>
+                    <option value="MISLEADING">Information trompeuse</option>
+                    <option value="DUPLICATE">Annonce en double</option>
+                    <option value="OTHER">Autre</option>
+                  </select>
+                </label>
+
+                <label className="form-field">
+                  <span>Détails</span>
+                  <textarea
+                    value={reportDescription}
+                    onChange={event => setReportDescription(event.target.value)}
+                    placeholder="Expliquez brièvement le problème"
+                    maxLength={3000}
+                  />
+                </label>
+
+                {reportError && <p className="form-error" role="alert">{reportError}</p>}
+
+                <button type="submit" className="primary-button" disabled={reportLoading}>
+                  {reportLoading ? "Envoi..." : "Envoyer le signalement"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ==========================

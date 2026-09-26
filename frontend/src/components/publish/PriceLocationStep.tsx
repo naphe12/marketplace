@@ -1,5 +1,5 @@
+import LocationPicker from "../location/LocationPicker";
 import LocationSelector from "./LocationSelector";
-import ApproximateLocationMap from "../location/ApproximateLocationMap";
 
 type Props = {
   price: string;
@@ -25,6 +25,7 @@ type Props = {
     latitude: number | null;
     longitude: number | null;
   }) => void;
+  onMapLocationChange: (latitude: number, longitude: number) => void;
 };
 
 export default function PriceLocationStep({
@@ -35,23 +36,15 @@ export default function PriceLocationStep({
   onPriceTypeChange, onAllowOffersChange,
   onProvinceChange, onCommuneChange,
   onZoneChange, onLocalityChange,
-  onLocationResolved,
+  onLocationResolved, onMapLocationChange,
 }: Props) {
   const hasLocation =
     latitude !== null && longitude !== null &&
     Number.isFinite(latitude) && Number.isFinite(longitude) &&
     Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
 
-  const radiusMeters = localityId ? 800 : zoneId ? 2500 : communeId ? 6000 : 12000;
-
-  console.log("LOCALISATION", {
-    provinceId,
-    communeId,
-    zoneId,
-    localityId,
-    latitude,
-    longitude,
-  });
+  const defaultLatitude = hasLocation ? latitude : null;
+  const defaultLongitude = hasLocation ? longitude : null;
 
   return (
     <section className="publish-panel">
@@ -110,11 +103,13 @@ export default function PriceLocationStep({
         onLocationResolved={onLocationResolved}
       />
 
-      {hasLocation && latitude !== null && longitude !== null && (
-        <ApproximateLocationMap
-          latitude={latitude}
-          longitude={longitude}
-          radiusMeters={radiusMeters}
+      {Boolean(communeId) && (
+        <LocationPicker
+          latitude={hasLocation ? latitude : null}
+          longitude={hasLocation ? longitude : null}
+          defaultLatitude={defaultLatitude}
+          defaultLongitude={defaultLongitude}
+          onChange={onMapLocationChange}
         />
       )}
 

@@ -425,6 +425,24 @@ function PublishEditor({
     );
 
 
+  const handleMapLocationChange =
+    useCallback(
+      (
+        latitude: number,
+        longitude: number,
+      ) => {
+        setApproximateLatitude(
+          latitude,
+        );
+
+        setApproximateLongitude(
+          longitude,
+        );
+      },
+      [],
+    );
+
+
   // -----------------------------
   // Autosave annonce
   // -----------------------------
@@ -1293,6 +1311,7 @@ function PublishEditor({
             onZoneChange={setZoneId}
             onLocalityChange={setLocalityId}
             onLocationResolved={handleLocationResolved}
+            onMapLocationChange={handleMapLocationChange}
           />
         )}
 

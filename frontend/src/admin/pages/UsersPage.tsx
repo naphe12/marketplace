@@ -4,6 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminListResponse, AdminUser } from "../types";
+import { downloadCsv } from "../utils/csv";
 import "../styles/admin-tables.css";
 const PAGE_SIZE = 25;
 
@@ -39,6 +40,21 @@ export default function UsersPage() {
     setAttempt(value => value + 1);
   }
 
+  function exportCsv() {
+    downloadCsv(
+      "utilisateurs-admin.csv",
+      (data?.items ?? []).map(user => ({
+        id: user.id,
+        phone: user.phone,
+        email: user.email,
+        account_type: user.account_type,
+        status: user.status,
+        phone_verified: user.phone_verified,
+        created_at: user.created_at,
+      })),
+    );
+  }
+
   async function action(user: AdminUser, actionName: "suspend" | "block" | "restore") {
     if (actionName !== "restore" && !window.confirm(`Confirmer l'action ${actionName} sur ${user.phone} ?`)) {
       return;
@@ -61,7 +77,8 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <form className="admin-filters" onSubmit={submit}>
+      <div className="admin-toolbar-row">
+        <form className="admin-filters" onSubmit={submit}>
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, téléphone, email" />
         <select value={status} onChange={event => setStatus(event.target.value)}>
           <option value="">Tous statuts</option>
@@ -79,8 +96,10 @@ export default function UsersPage() {
           <option value="true">Oui</option>
           <option value="false">Non</option>
         </select>
-        <button type="submit">Filtrer</button>
-      </form>
+          <button type="submit">Filtrer</button>
+        </form>
+        <button type="button" className="secondary-button" disabled={!data?.items.length} onClick={exportCsv}>Exporter CSV</button>
+      </div>
 
       {error && <p className="form-error">{error}</p>}
       {loading && <p role="status">Chargement...</p>}

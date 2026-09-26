@@ -7,9 +7,18 @@ import {
 } from "lucide-react";
 
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
   Link,
   useNavigate,
 } from "react-router-dom";
+
+import {
+  apiRequest,
+} from "../../api/client";
 
 import {
   useAuth,
@@ -20,6 +29,49 @@ export default function Header() {
   const navigate = useNavigate();
 
   const { user } = useAuth();
+
+  const [unreadNotifications, setUnreadNotifications] =
+    useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotifications(0);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadUnreadCount() {
+      try {
+        const result = await apiRequest<{ unread: number }>(
+          "/notifications/unread-count",
+          {
+            authenticated: true,
+          },
+        );
+
+        if (mounted) {
+          setUnreadNotifications(result.unread);
+        }
+      } catch {
+        if (mounted) {
+          setUnreadNotifications(0);
+        }
+      }
+    }
+
+    void loadUnreadCount();
+
+    const interval = window.setInterval(
+      loadUnreadCount,
+      30000,
+    );
+
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, [user]);
 
   return (
     <header className="app-header">
@@ -68,7 +120,9 @@ export default function Header() {
         >
           <Bell size={21} />
 
-          <span className="notification-dot" />
+          {unreadNotifications > 0 && (
+            <span className="notification-dot" />
+          )}
         </Link>
 
         <Link

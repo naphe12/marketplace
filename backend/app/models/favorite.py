@@ -1,9 +1,35 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
+
+
+class FavoriteFolder(UUIDMixin, TimestampMixin, Base):
+    __tablename__ = "favorite_folders"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "name",
+            name="uq_favorite_folder_user_name",
+        ),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "market.users.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(80),
+        nullable=False,
+    )
 
 
 class Favorite(UUIDMixin, TimestampMixin, Base):

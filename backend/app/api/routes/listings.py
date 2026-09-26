@@ -30,6 +30,7 @@ from decimal import Decimal
 from app.schemas.listing import (
     ListingSearchResponse,
 )
+from app.schemas.listing_stats import ListingStatsResponse
 
 from app.schemas.upload import (
     ImageUploadPrepareRequest,
@@ -40,8 +41,11 @@ from app.schemas.upload import (
 from app.services.storage_service import (
     StorageService,
 )
+from app.models.favorite import Favorite
+from app.models.conversation import Conversation
 from app.models.listing import ListingImage
 from app.models.listing import Listing
+from app.models.listing_metric import ListingView
 from app.services.listing_publication_service import (
     publish_listing as publish_listing_decision,
 )
@@ -67,6 +71,51 @@ async def my_listings(
         current_user.id,
         status=status,
     )
+
+
+
+
+@router.get(
+    "/mine/stats",
+    response_model=list[ListingStatsResponse],
+)
+async def my_listing_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    listing_ids = (
+        await db.scalars(
+            select(Listing.id).where(
+                Listing.seller_id == current_user.id,
+                Listing.deleted_at.is_(None),
+            )
+        )
+    ).all()
+
+    if not listing_ids:
+        return []
+
+    async def grouped_counts(model, column):
+        rows = await db.execute(
+            select(column, func.count())
+            .where(column.in_(listing_ids))
+            .group_by(column)
+        )
+        return {listing_id: int(total) for listing_id, total in rows.all()}
+
+    view_counts = await grouped_counts(ListingView, ListingView.listing_id)
+    favorite_counts = await grouped_counts(Favorite, Favorite.listing_id)
+    conversation_counts = await grouped_counts(Conversation, Conversation.listing_id)
+
+    return [
+        {
+            "listing_id": listing_id,
+            "views": view_counts.get(listing_id, 0),
+            "favorites": favorite_counts.get(listing_id, 0),
+            "conversations": conversation_counts.get(listing_id, 0),
+        }
+        for listing_id in listing_ids
+    ]
 
 
 @router.get(
@@ -100,6 +149,31 @@ async def create_listing(
         current_user.id,
         data,
     )
+
+
+
+
+@router.post(
+    "/{listing_id}/view",
+)
+async def record_listing_view(
+    listing_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    listing = await db.scalar(
+        select(Listing).where(
+            Listing.id == listing_id,
+            Listing.deleted_at.is_(None),
+        )
+    )
+
+    if not listing:
+        raise HTTPException(status_code=404, detail="Annonce introuvable.")
+
+    db.add(ListingView(listing_id=listing_id, source="DETAIL"))
+    await db.commit()
+
+    return {"success": True}
 
 
 @router.patch(

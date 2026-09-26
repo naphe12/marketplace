@@ -20,3 +20,11 @@ from app.models.verification import (
 from app.models.notification import Notification
 from app.models.audit import AuditLog
 from app.models.administrative_area import AdministrativeArea
+
+from app.models.saved_search import SavedSearch
+
+from app.models.favorite import Favorite, FavoriteFolder
+
+from app.models.admin_note import AdminNote
+
+from app.models.listing_metric import ListingView

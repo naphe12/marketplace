@@ -4,6 +4,7 @@ import { apiRequest } from "../../api/client";
 import DataTable from "../components/DataTable";
 import StatusBadge from "../components/StatusBadge";
 import type { AdminListResponse, AdminListing } from "../types";
+import { downloadCsv } from "../utils/csv";
 import "../styles/admin-tables.css";
 const PAGE_SIZE = 25;
 const statuses = ["ACTIVE", "DRAFT", "PENDING_PAYMENT", "RESERVED", "SOLD", "EXPIRED", "SUSPENDED", "REMOVED", "REJECTED"];
@@ -36,6 +37,21 @@ export default function ListingsPage() {
     setAttempt(value => value + 1);
   }
 
+  function exportCsv() {
+    downloadCsv(
+      "annonces-admin.csv",
+      (data?.items ?? []).map(listing => ({
+        id: listing.id,
+        title: listing.title,
+        seller_id: listing.seller_id,
+        price: listing.price,
+        currency: listing.currency,
+        status: listing.status,
+        expires_at: listing.expires_at,
+      })),
+    );
+  }
+
   async function action(listing: AdminListing, actionName: "suspend" | "restore" | "remove") {
     if (actionName !== "restore" && !window.confirm(`Confirmer l'action ${actionName} sur cette annonce ?`)) {
       return;
@@ -58,14 +74,17 @@ export default function ListingsPage() {
         </div>
       </div>
 
-      <form className="admin-filters" onSubmit={submit}>
+      <div className="admin-toolbar-row">
+        <form className="admin-filters" onSubmit={submit}>
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Titre, vendeur, catégorie, localisation" />
         <select value={status} onChange={event => setStatus(event.target.value)}>
           <option value="">Tous statuts</option>
           {statuses.map(item => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button type="submit">Filtrer</button>
-      </form>
+          <button type="submit">Filtrer</button>
+        </form>
+        <button type="button" className="secondary-button" disabled={!data?.items.length} onClick={exportCsv}>Exporter CSV</button>
+      </div>
 
       {error && <p className="form-error">{error}</p>}
       {loading && <p role="status">Chargement...</p>}

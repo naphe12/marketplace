@@ -25,6 +25,9 @@ export type Listing = {
   condition: string | null;
   status: string;
 
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+
   created_at: string;
   published_at: string | null;
   expires_at: string | null;

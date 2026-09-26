@@ -2,10 +2,19 @@ import {
   MapContainer,
   Marker,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 
+import {
+  LocateFixed,
+} from "lucide-react";
+
 import L from "leaflet";
+
+import {
+  useEffect,
+} from "react";
 
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -26,12 +35,41 @@ L.Icon.Default.mergeOptions({
 type Props = {
   latitude: number | null;
   longitude: number | null;
+  defaultLatitude?: number | null;
+  defaultLongitude?: number | null;
 
   onChange: (
     latitude: number,
     longitude: number,
   ) => void;
 };
+
+
+function MapCenterSync({
+  latitude,
+  longitude,
+}: {
+  latitude: number;
+  longitude: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(
+      [latitude, longitude],
+      map.getZoom(),
+      {
+        animate: true,
+      },
+    );
+  }, [
+    latitude,
+    longitude,
+    map,
+  ]);
+
+  return null;
+}
 
 
 function LocationMarker({
@@ -69,19 +107,21 @@ function LocationMarker({
 export default function LocationPicker({
   latitude,
   longitude,
+  defaultLatitude,
+  defaultLongitude,
   onChange,
 }: Props) {
 
-  /*
-   * Centre par défaut.
-   * Bujumbura dans cet exemple.
-   * On pourra ensuite le rendre dynamique.
-   */
   const center: [number, number] =
     latitude !== null &&
       longitude !== null
       ? [latitude, longitude]
-      : [-3.3614, 29.3599];
+      : defaultLatitude !== null &&
+        defaultLatitude !== undefined &&
+        defaultLongitude !== null &&
+        defaultLongitude !== undefined
+        ? [defaultLatitude, defaultLongitude]
+        : [-3.3614, 29.3599];
 
 
   function useCurrentLocation() {
@@ -136,7 +176,8 @@ export default function LocationPicker({
           className="location-picker__gps"
           onClick={useCurrentLocation}
         >
-          📍 Ma position
+          <LocateFixed size={16} />
+          <span>Ma position</span>
         </button>
 
       </div>
@@ -161,6 +202,11 @@ export default function LocationPicker({
           latitude={latitude}
           longitude={longitude}
           onChange={onChange}
+        />
+
+        <MapCenterSync
+          latitude={center[0]}
+          longitude={center[1]}
         />
 
       </MapContainer>

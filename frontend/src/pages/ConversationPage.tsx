@@ -1,5 +1,7 @@
 import {
+  useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -83,6 +85,18 @@ export default function ConversationPage() {
   const [error, setError] =
     useState("");
 
+  const [sending, setSending] =
+    useState(false);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [lastSyncedAt, setLastSyncedAt] =
+    useState<Date | null>(null);
+
+  const [reportingMessageId, setReportingMessageId] =
+    useState<string | null>(null);
+
   const [
     offerActionLoading,
     setOfferActionLoading,
@@ -94,148 +108,114 @@ export default function ConversationPage() {
   ] = useState<string | null>(null);
 
 
-  useEffect(() => {
-    if (!conversationId || !user) {
-      setLoading(false);
-      return;
-    }
+  const loadConversation = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!conversationId || !user) {
+        setLoading(false);
+        return;
+      }
 
-    let mounted = true;
+      if (options?.silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
-    setLoading(true);
-    setError("");
+      setError("");
 
-    async function loadConversation() {
       try {
-        /*
-         * 1. Messages.
-         *
-         * Le chargement des messages reste
-         * prioritaire.
-         */
-        const loadedMessages =
-          await apiRequest<Message[]>(
+        const [
+          loadedMessages,
+          loadedOffersResult,
+          loadedTransactionsResult,
+        ] = await Promise.allSettled([
+          apiRequest<Message[]>(
             `/conversations/${conversationId}/messages`,
             {
               authenticated: true,
             },
-          );
+          ),
 
-        if (!mounted) {
-          return;
+          apiRequest<ConversationOffer[]>(
+            `/conversations/${conversationId}/offers`,
+            {
+              authenticated: true,
+            },
+          ),
+
+          apiRequest<MarketplaceTransaction[]>(
+            "/transactions/mine",
+            {
+              authenticated: true,
+            },
+          ),
+        ]);
+
+        if (loadedMessages.status === "rejected") {
+          throw loadedMessages.reason;
         }
 
-        setMessages(loadedMessages);
+        setMessages(loadedMessages.value);
 
-        /*
-         * 2. Offres.
-         *
-         * Une erreur ici ne doit pas bloquer
-         * la messagerie.
-         */
-        try {
-          const loadedOffers =
-            await apiRequest<ConversationOffer[]>(
-              `/conversations/${conversationId}/offers`,
-              {
-                authenticated: true,
-              },
-            );
+        setOffers(
+          loadedOffersResult.status === "fulfilled"
+            ? loadedOffersResult.value
+            : [],
+        );
 
-          if (mounted) {
-            setOffers(loadedOffers);
-            console.log(
-              "OFFRES CONVERSATION",
-              loadedOffers,
-            );
-          }
-        } catch (offerError) {
-          console.error(
-            "Impossible de charger les offres :",
-            offerError,
-          );
+        setTransactions(
+          loadedTransactionsResult.status === "fulfilled"
+            ? loadedTransactionsResult.value
+            : [],
+        );
 
-          if (mounted) {
-            setOffers([]);
-          }
-        }
+        setLastSyncedAt(new Date());
 
-        /*
-         * 3. Transactions de l'utilisateur.
-         *
-         * On chargera toutes ses transactions,
-         * puis on filtrera celles qui concernent
-         * les offres de cette conversation.
-         */
-        try {
-          const loadedTransactions =
-            await apiRequest<
-              MarketplaceTransaction[]
-            >(
-              "/transactions/mine",
-              {
-                authenticated: true,
-              },
-            );
-
-          if (mounted) {
-            setTransactions(
-              loadedTransactions,
-            );
-            console.log(
-              "TRANSACTIONS USER",
-              loadedTransactions,
-            );
-          }
-        } catch (transactionError) {
-          console.error(
-            "Impossible de charger les transactions :",
-            transactionError,
-          );
-
-          if (mounted) {
-            setTransactions([]);
-          }
-        }
+        void apiRequest(
+          `/conversations/${conversationId}/read`,
+          {
+            method: "POST",
+            authenticated: true,
+          },
+        ).catch(() => undefined);
       } catch (cause) {
-        if (!mounted) {
-          return;
-        }
-
         setError(
           cause instanceof Error
             ? cause.message
             : "Impossible de charger les messages.",
         );
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
+        setRefreshing(false);
       }
-    }
+    },
+    [
+      conversationId,
+      user,
+    ],
+  );
 
+
+  useEffect(() => {
+    if (!conversationId || !user) {
+      setLoading(false);
+      return;
+    }
 
     void loadConversation();
 
-
-    /*
-     * Marquer la conversation comme lue.
-     */
-    void apiRequest(
-      `/conversations/${conversationId}/read`,
-      {
-        method: "POST",
-        authenticated: true,
-      },
-    ).catch(() => undefined);
-
+    const interval = window.setInterval(
+      () => void loadConversation({ silent: true }),
+      10000,
+    );
 
     return () => {
-      mounted = false;
+      window.clearInterval(interval);
     };
   }, [
     conversationId,
     user,
+    loadConversation,
   ]);
 
 
@@ -252,6 +232,7 @@ export default function ConversationPage() {
 
     setText("");
     setError("");
+    setSending(true);
 
     try {
       const message =
@@ -279,6 +260,45 @@ export default function ConversationPage() {
           ? cause.message
           : "Impossible d'envoyer le message.",
       );
+    } finally {
+      setSending(false);
+    }
+  }
+
+
+
+  async function reportMessage(message: Message) {
+    const description = window.prompt("Pourquoi signalez-vous ce message ?");
+
+    if (description === null) {
+      return;
+    }
+
+    setReportingMessageId(message.id);
+    setError("");
+
+    try {
+      await apiRequest(
+        "/reports",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            target_type: "MESSAGE",
+            target_id: message.id,
+            reason: "MESSAGE_ABUSE",
+            description: description.trim() || null,
+          }),
+        },
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de signaler ce message.",
+      );
+    } finally {
+      setReportingMessageId(null);
     }
   }
 
@@ -434,26 +454,28 @@ export default function ConversationPage() {
    * On ne conserve ici que celles dont
    * offer_id appartient à cette conversation.
    */
-  const conversationOfferIds =
-    new Set(
+  const conversationOfferIds = useMemo(
+    () => new Set(
       offers.map(
         offer => offer.id,
       ),
-    );
+    ),
+    [offers],
+  );
 
 
-  const conversationTransactions =
-    transactions.filter(
+  const conversationTransactions = useMemo(
+    () => transactions.filter(
       transaction =>
         transaction.offer_id !== null &&
         conversationOfferIds.has(
           transaction.offer_id,
         ),
-    );
-
-  console.log(
-    "TRANSACTIONS CONVERSATION",
-    conversationTransactions,
+    ),
+    [
+      transactions,
+      conversationOfferIds,
+    ],
   );
 
 
@@ -552,6 +574,25 @@ export default function ConversationPage() {
         </p>
       )}
 
+      <div className="conversation-sync-bar">
+        <span>
+          {refreshing
+            ? "Actualisation..."
+            : lastSyncedAt
+              ? `Dernière actualisation ${lastSyncedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+              : "Conversation chargée"}
+        </span>
+
+        <button
+          type="button"
+          className="text-button"
+          disabled={refreshing}
+          onClick={() => void loadConversation({ silent: true })}
+        >
+          Actualiser
+        </button>
+      </div>
+
 
       <section className="messages-panel">
 
@@ -644,6 +685,7 @@ export default function ConversationPage() {
                       .sender_id ===
                     user.id
                   }
+                  onReport={reportingMessageId === item.message.id ? undefined : reportMessage}
                 />
               );
             })
@@ -654,6 +696,7 @@ export default function ConversationPage() {
 
         <MessageComposer
           text={text}
+          sending={sending}
           onChange={setText}
           onSubmit={() =>
             void sendMessage()

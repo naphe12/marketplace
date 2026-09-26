@@ -8,6 +8,7 @@ import type {
 
 type Props = {
   text: string;
+  sending?: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
 };
@@ -15,6 +16,7 @@ type Props = {
 
 export default function MessageComposer({
   text,
+  sending = false,
   onChange,
   onSubmit,
 }: Props) {
@@ -30,11 +32,12 @@ export default function MessageComposer({
         onChange={event => onChange(event.target.value)}
         placeholder="Votre message"
         maxLength={3000}
+        disabled={sending}
       />
 
-      <button type="submit" disabled={!text.trim()}>
+      <button type="submit" disabled={sending || !text.trim()}>
         <Send size={17} />
-        <span>Envoyer</span>
+        <span>{sending ? "Envoi..." : "Envoyer"}</span>
       </button>
     </form>
   );

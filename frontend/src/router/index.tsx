@@ -38,6 +38,7 @@ import ListingDetailPage from "../pages/ListingDetailPage";
 import ListingPackagesPage from "../pages/ListingPackagesPage";
 import LoginPage from "../pages/LoginPage";
 import MessagesPage from "../pages/MessagesPage";
+import UserNotificationsPage from "../pages/NotificationsPage";
 import ProfilePage from "../pages/ProfilePage";
 import PublishPage from "../pages/PublishPage";
 import RouteErrorPage from "../pages/RouteErrorPage";
@@ -210,6 +211,10 @@ export const router =
         {
           path: "/favorites",
           element: <FavoritesPage />,
+        },
+        {
+          path: "/notifications",
+          element: <UserNotificationsPage />,
         },
         {
           path: "/profile",
