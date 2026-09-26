@@ -8641,3 +8641,265 @@ a.text-button {
     flex: 1;
   }
 }
+
+
+/* =================================
+   MOBILE-FIRST RESPONSIVE GUARDRails
+   ================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+.page-container {
+  padding-inline: clamp(12px, 4vw, 16px);
+}
+
+.page,
+.search-page,
+.favorites-page,
+.notifications-page,
+.profile-page,
+.publish-page,
+.listing-detail-page,
+.checkout-flow-panel {
+  min-width: 0;
+}
+
+.page-heading,
+.notifications-heading,
+.seller-dashboard-hero,
+.profile-verification-card,
+.seller-section-heading,
+.admin-toolbar-row {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.page-heading > *,
+.notifications-heading > *,
+.seller-dashboard-hero > *,
+.profile-verification-card > *,
+.seller-section-heading > *,
+.admin-toolbar-row > * {
+  min-width: 0;
+}
+
+.auth-page--split,
+.auth-grid-two,
+.seller-stats-grid,
+.search-filter-grid,
+.payment-method-grid,
+.favorite-grid {
+  grid-template-columns: 1fr;
+}
+
+.auth-page--split {
+  width: 100%;
+  align-items: stretch;
+}
+
+.auth-card,
+.auth-onboarding-card {
+  max-width: 100%;
+}
+
+.search-query-row,
+.search-filter-actions,
+.saved-search-create,
+.favorite-folder-create,
+.notifications-actions,
+.listing-detail__buyer-actions,
+.conversation-sync-bar {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.search-query-row > *,
+.search-filter-actions > *,
+.saved-search-create > *,
+.favorite-folder-create > *,
+.notifications-actions > *,
+.listing-detail__buyer-actions > *,
+.conversation-sync-bar > * {
+  width: 100%;
+}
+
+.search-view-toggle,
+.listing-search-pagination,
+.favorite-folder-tabs,
+.favorite-folder-tab-wrap,
+.favorite-folder-tab {
+  width: 100%;
+}
+
+.search-view-toggle__item,
+.listing-search-pagination button {
+  flex: 1 1 0;
+}
+
+.seller-listing-row {
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: start;
+}
+
+.seller-listing-actions {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.seller-listing-actions .primary-button,
+.seller-listing-actions .secondary-button,
+.seller-dashboard-actions .primary-button,
+.seller-dashboard-actions .secondary-button {
+  width: 100%;
+}
+
+.checkout-step {
+  grid-template-columns: 1fr;
+}
+
+.checkout-step > .primary-button,
+.checkout-step > .checkout-success,
+.checkout-step > .payment-method-grid {
+  grid-column: 1;
+}
+
+.search-results-map__leaflet {
+  height: min(380px, 70dvh);
+}
+
+.admin-table-shell,
+.admin-table-scroll,
+.admin-table-wrap {
+  max-width: 100%;
+}
+
+@media (min-width: 540px) {
+  .favorite-grid,
+  .seller-stats-grid,
+  .auth-grid-two,
+  .payment-method-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-query-row,
+  .saved-search-create,
+  .favorite-folder-create,
+  .notifications-actions,
+  .listing-detail__buyer-actions,
+  .conversation-sync-bar {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .search-query-row > *,
+  .saved-search-create > *,
+  .favorite-folder-create > *,
+  .notifications-actions > *,
+  .listing-detail__buyer-actions > *,
+  .conversation-sync-bar > * {
+    width: auto;
+  }
+
+  .search-query-field,
+  .saved-search-create input,
+  .favorite-folder-create input {
+    flex: 1 1 240px;
+  }
+
+  .favorite-folder-tab-wrap,
+  .favorite-folder-tab {
+    width: auto;
+  }
+}
+
+@media (min-width: 700px) {
+  .checkout-step {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .checkout-step > .primary-button,
+  .checkout-step > .checkout-success,
+  .checkout-step > .payment-method-grid {
+    grid-column: 2;
+  }
+
+  .payment-method-grid,
+  .favorite-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .search-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-filter-actions {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .search-filter-actions > * {
+    width: auto;
+  }
+}
+
+@media (min-width: 780px) {
+  .page-heading,
+  .seller-dashboard-hero,
+  .profile-verification-card,
+  .seller-section-heading,
+  .admin-toolbar-row {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .seller-stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .seller-listing-row {
+    grid-template-columns: 82px minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .seller-listing-actions {
+    grid-column: auto;
+    width: auto;
+  }
+
+  .seller-listing-actions .primary-button,
+  .seller-listing-actions .secondary-button,
+  .seller-dashboard-actions .primary-button,
+  .seller-dashboard-actions .secondary-button {
+    width: auto;
+  }
+}
+
+@media (min-width: 900px) {
+  .auth-page--split {
+    grid-template-columns: minmax(320px, 460px) minmax(280px, 420px);
+    align-items: start;
+  }
+
+  .search-filter-grid,
+  .favorite-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .search-results-map__leaflet {
+    height: 520px;
+  }
+}

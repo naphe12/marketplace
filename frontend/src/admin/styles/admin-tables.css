@@ -789,3 +789,99 @@
 .admin-pagination button {
   min-width: 38px;
 }
+
+
+/* ---------- Mobile-first admin guardrails ---------- */
+
+.admin-shell,
+.admin-main,
+.admin-content,
+.admin-page {
+  min-width: 0;
+}
+
+.admin-page-heading,
+.admin-toolbar,
+.admin-filters,
+.admin-toolbar-row,
+.admin-row-actions,
+.admin-pagination {
+  align-items: stretch;
+}
+
+.admin-page-heading,
+.admin-toolbar-row,
+.admin-pagination {
+  flex-direction: column;
+}
+
+.admin-toolbar,
+.admin-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.admin-page input,
+.admin-page select,
+.admin-page button,
+.admin-page .primary-button,
+.admin-page .secondary-button,
+.admin-page .text-button {
+  max-width: 100%;
+}
+
+.admin-filters button,
+.admin-toolbar-row > .secondary-button {
+  width: 100%;
+}
+
+.admin-table-scroll,
+.admin-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-page table,
+.admin-table {
+  min-width: 680px;
+}
+
+.admin-row-actions {
+  min-width: 0;
+}
+
+.admin-row-actions button {
+  flex: 1 1 auto;
+}
+
+@media (min-width: 680px) {
+  .admin-toolbar,
+  .admin-filters {
+    display: flex;
+    align-items: center;
+  }
+
+  .admin-filters button,
+  .admin-toolbar-row > .secondary-button {
+    width: auto;
+  }
+
+  .admin-pagination {
+    align-items: center;
+    flex-direction: row;
+  }
+}
+
+@media (min-width: 900px) {
+  .admin-toolbar-row,
+  .admin-page-heading {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .admin-page table,
+  .admin-table {
+    min-width: 780px;
+  }
+}
