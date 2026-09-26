@@ -64,9 +64,20 @@ def upgrade():
     )
     op.execute(
         """
-        ALTER TABLE IF EXISTS market.conversations
-        ADD CONSTRAINT uq_conversation_listing_buyer_seller
-        UNIQUE (listing_id, buyer_id, seller_id)
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'uq_conversation_listing_buyer_seller'
+                  AND conrelid = 'market.conversations'::regclass
+            ) THEN
+                ALTER TABLE market.conversations
+                ADD CONSTRAINT uq_conversation_listing_buyer_seller
+                UNIQUE (listing_id, buyer_id, seller_id);
+            END IF;
+        END
+        $$
         """
     )
     op.execute(

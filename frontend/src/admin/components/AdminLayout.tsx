@@ -4,6 +4,7 @@ import {
 
 import AdminHeader from "./AdminHeader";
 import AdminSidebar from "./AdminSidebar";
+import "../styles/admin-tables.css";
 
 
 export default function AdminLayout() {
