@@ -96,7 +96,7 @@ a {
 }
 
 .icon-button {
-  width: 42px;
+  width: 82px;
   height: 42px;
 
   display: flex;
@@ -9020,7 +9020,7 @@ iframe {
 
 .language-switcher {
   height: 42px;
-  min-width: 78px;
+  min-width: 118px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -9050,7 +9050,7 @@ iframe {
 
 @media (max-width: 760px) {
   .language-switcher {
-    min-width: 70px;
+    min-width: 104px;
     height: 40px;
   }
 }
