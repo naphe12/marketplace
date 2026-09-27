@@ -118,8 +118,6 @@ class NotificationService:
             )
 
         if not notification.is_read:
-            notification.is_read = True
-
             notification.read_at = (
                 datetime.now(timezone.utc)
             )
@@ -135,15 +133,11 @@ class NotificationService:
         user_id: UUID,
     ):
 
-        now = datetime.now(
-            timezone.utc
-        )
-
         await db.execute(
             update(Notification)
             .where(
                 Notification.user_id == user_id,
-                Notification.is_read.is_(False),
+                Notification.read_at.is_(None),
             )
             .values(
                 

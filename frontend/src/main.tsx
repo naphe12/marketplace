@@ -15,6 +15,10 @@ import {
 } from "./auth/AuthContext";
 
 import {
+  I18nProvider,
+} from "./i18n/I18nProvider";
+
+import {
   router,
 } from "./router";
 
@@ -27,10 +31,12 @@ createRoot(
   document.getElementById("root")!,
 ).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider
-        router={router}
-      />
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <RouterProvider
+          router={router}
+        />
+      </AuthProvider>
+    </I18nProvider>
   </StrictMode>,
 );

@@ -1,13 +1,17 @@
 import { NavLink } from "react-router-dom";
 
+import { useI18n } from "../../i18n/I18nProvider";
+
 import { navigationItems } from "./navigation";
 
 
 export default function BottomNav() {
+  const { t } = useI18n();
+
   const mobileItems =
     navigationItems.filter(
       item =>
-        item.label !== "Favoris",
+        item.labelKey !== "nav.favorites",
     );
 
   return (
@@ -15,7 +19,7 @@ export default function BottomNav() {
       {mobileItems.map(
         ({
           to,
-          label,
+          labelKey,
           icon: Icon,
           primary,
         }) => (
@@ -40,7 +44,7 @@ export default function BottomNav() {
               <Icon size={21} />
             </div>
 
-            <span>{label}</span>
+            <span>{t(labelKey)}</span>
           </NavLink>
         ),
       )}

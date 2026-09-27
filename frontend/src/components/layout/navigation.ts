@@ -7,37 +7,47 @@ import {
   User,
 } from "lucide-react";
 
+import type {
+  TranslationKey,
+} from "../../i18n/translations";
 
-export const navigationItems = [
+type NavigationItem = {
+  to: string;
+  labelKey: TranslationKey;
+  icon: typeof Home;
+  primary?: boolean;
+};
+
+export const navigationItems: NavigationItem[] = [
   {
     to: "/",
-    label: "Accueil",
+    labelKey: "nav.home",
     icon: Home,
   },
   {
     to: "/search",
-    label: "Rechercher",
+    labelKey: "nav.search",
     icon: Search,
   },
   {
     to: "/publish",
-    label: "Publier",
+    labelKey: "nav.publish",
     icon: PlusCircle,
     primary: true,
   },
   {
     to: "/messages",
-    label: "Messages",
+    labelKey: "nav.messages",
     icon: MessageCircle,
   },
   {
     to: "/favorites",
-    label: "Favoris",
+    labelKey: "nav.favorites",
     icon: Heart,
   },
   {
     to: "/profile",
-    label: "Profil",
+    labelKey: "nav.profile",
     icon: User,
   },
 ];

@@ -17,6 +17,7 @@ import {
 
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nProvider";
 
 import CategoryScroller from "../components/home/CategoryScroller";
 import ListingCard from "../components/listings/ListingCard";
@@ -34,6 +35,8 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const { user } = useAuth();
+
+  const { t } = useI18n();
 
   const [query, setQuery] =
     useState("");
@@ -121,7 +124,7 @@ export default function HomePage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Impossible de charger l'accueil.",
+            : t("home.loadError"),
         );
       } finally {
         setLoading(false);
@@ -162,20 +165,16 @@ export default function HomePage() {
             <ShieldCheck size={17} />
 
             <span>
-              Achetez et vendez
-              avec plus de confiance
+              {t("home.heroEyebrow")}
             </span>
           </div>
 
           <h1>
-            Trouvez ce que vous cherchez,
-            près de chez vous.
+            {t("home.title")}
           </h1>
 
           <p>
-            Découvrez des milliers
-            d'annonces et échangez
-            directement avec les vendeurs.
+            {t("home.subtitle")}
           </p>
 
 
@@ -192,12 +191,12 @@ export default function HomePage() {
                   event.target.value,
                 )
               }
-              placeholder="Téléphone, voiture, maison..."
-              aria-label="Rechercher une annonce"
+              placeholder={t("home.searchPlaceholder")}
+              aria-label={t("home.searchAria")}
             />
 
             <button type="submit">
-              Rechercher
+              {t("home.searchButton")}
             </button>
           </form>
         </div>
@@ -209,8 +208,7 @@ export default function HomePage() {
       ) : error ? (
         <section className="home-error">
           <h2>
-            Impossible de charger
-            les annonces
+            {t("home.listingsErrorTitle")}
           </h2>
 
           <p>{error}</p>
@@ -221,11 +219,11 @@ export default function HomePage() {
             <div className="home-section__heading">
               <div>
                 <span className="section-kicker">
-                  Explorer
+                  {t("home.explore")}
                 </span>
 
                 <h2>
-                  Catégories
+                  {t("home.categories")}
                 </h2>
               </div>
 
@@ -236,7 +234,7 @@ export default function HomePage() {
                   navigate("/search")
                 }
               >
-                Tout voir
+                {t("home.seeAll")}
 
                 <ArrowRight size={16} />
               </button>
@@ -255,14 +253,11 @@ export default function HomePage() {
 
             <div>
               <strong>
-                Des profils plus fiables
+                {t("home.trustTitle")}
               </strong>
 
               <p>
-                Vérification,
-                transactions et avis
-                contribuent à construire
-                la confiance.
+                {t("home.trustText")}
               </p>
             </div>
           </section>
@@ -273,11 +268,11 @@ export default function HomePage() {
               <div>
                 <span className="section-kicker">
                   <Sparkles size={14} />
-                  Nouveautés
+                  {t("home.new")}
                 </span>
 
                 <h2>
-                  Annonces récentes
+                  {t("home.recentListings")}
                 </h2>
               </div>
 
@@ -290,7 +285,7 @@ export default function HomePage() {
                   )
                 }
               >
-                Voir tout
+                {t("home.viewAll")}
 
                 <ArrowRight size={16} />
               </button>
@@ -300,12 +295,11 @@ export default function HomePage() {
             {listings.length === 0 ? (
               <div className="empty-state">
                 <h3>
-                  Pas encore d'annonces
+                  {t("home.emptyTitle")}
                 </h3>
 
                 <p>
-                  Soyez parmi les premiers
-                  à publier une annonce.
+                  {t("home.emptyText")}
                 </p>
 
                 <button
@@ -315,7 +309,7 @@ export default function HomePage() {
                     navigate("/publish")
                   }
                 >
-                  Publier une annonce
+                  {t("home.publishListing")}
                 </button>
               </div>
             ) : (

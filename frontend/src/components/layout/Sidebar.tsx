@@ -16,9 +16,15 @@ import {
   useAuth,
 } from "../../auth/AuthContext";
 
+import {
+  useI18n,
+} from "../../i18n/I18nProvider";
+
 
 export default function Sidebar() {
   const { user } = useAuth();
+
+  const { t } = useI18n();
 
   return (
     <aside className="sidebar">
@@ -29,7 +35,7 @@ export default function Sidebar() {
 
         <div className="sidebar-brand-text">
           <strong>MarketBI</strong>
-          <span>Marketplace</span>
+          <span>{t("sidebar.marketplace")}</span>
         </div>
       </div>
 
@@ -37,8 +43,8 @@ export default function Sidebar() {
         <Sparkles size={18} />
 
         <div>
-          <strong>Marketplace locale</strong>
-          <span>Acheter, vendre et discuter au Burundi.</span>
+          <strong>{t("sidebar.localMarketplace")}</strong>
+          <span>{t("sidebar.localMarketplaceText")}</span>
         </div>
       </div>
 
@@ -46,7 +52,7 @@ export default function Sidebar() {
         {navigationItems.map(
           ({
             to,
-            label,
+            labelKey,
             icon: Icon,
             primary,
           }) => (
@@ -69,7 +75,7 @@ export default function Sidebar() {
             >
               <Icon size={21} />
 
-              <span>{label}</span>
+              <span>{t(labelKey)}</span>
             </NavLink>
           ),
         )}
@@ -81,15 +87,15 @@ export default function Sidebar() {
           className="sidebar-item"
         >
           <ShieldCheck size={21} />
-          <span>Administration</span>
+          <span>{t("nav.admin")}</span>
         </NavLink>
       )}
 
       <div className="sidebar-promo">
         <CircleDollarSign size={20} />
         <div>
-          <strong>Publication rapide</strong>
-          <span>Créez une annonce en quelques étapes.</span>
+          <strong>{t("sidebar.quickPublish")}</strong>
+          <span>{t("sidebar.quickPublishText")}</span>
         </div>
       </div>
 
@@ -103,8 +109,8 @@ export default function Sidebar() {
         <div className="sidebar-user">
           <strong>
             {user
-              ? "Mon compte"
-              : "Visiteur"}
+              ? t("header.myAccount")
+              : t("sidebar.visitor")}
           </strong>
 
           {user && (

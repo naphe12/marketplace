@@ -2,15 +2,14 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     ForeignKey,
-    JSON,
     Index,
     text,
     String,
     Text,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
@@ -84,6 +83,14 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    @hybrid_property
+    def is_read(self) -> bool:
+        return self.read_at is not None
+
+    @is_read.expression
+    def is_read(cls):
+        return cls.read_at.is_not(None)
 
     sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),

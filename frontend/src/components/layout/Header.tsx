@@ -24,11 +24,18 @@ import {
   useAuth,
 } from "../../auth/AuthContext";
 
+import LanguageSwitcher from "../../i18n/LanguageSwitcher";
+import {
+  useI18n,
+} from "../../i18n/I18nProvider";
+
 
 export default function Header() {
   const navigate = useNavigate();
 
   const { user } = useAuth();
+
+  const { t } = useI18n();
 
   const [unreadNotifications, setUnreadNotifications] =
     useState(0);
@@ -92,7 +99,7 @@ export default function Header() {
         <Search size={19} />
 
         <span>
-          Rechercher un produit, une ville, une marque...
+          {t("header.searchPlaceholder")}
         </span>
       </button>
 
@@ -102,13 +109,13 @@ export default function Header() {
           className="header-publish desktop-only"
         >
           <Plus size={18} />
-          <span>Publier</span>
+          <span>{t("nav.publish")}</span>
         </Link>
 
         <Link
           to="/favorites"
           className="header-icon desktop-only"
-          aria-label="Favoris"
+          aria-label={t("header.favorites")}
         >
           <Heart size={21} />
         </Link>
@@ -116,7 +123,7 @@ export default function Header() {
         <Link
           to="/notifications"
           className="header-icon notification-icon"
-          aria-label="Notifications"
+          aria-label={t("header.notifications")}
         >
           <Bell size={21} />
 
@@ -124,6 +131,8 @@ export default function Header() {
             <span className="notification-dot" />
           )}
         </Link>
+
+        <LanguageSwitcher />
 
         <Link
           to={
@@ -144,14 +153,14 @@ export default function Header() {
           <div className="desktop-profile__meta">
             <strong>
               {user
-                ? "Mon compte"
-                : "Connexion"}
+                ? t("header.myAccount")
+                : t("header.login")}
             </strong>
 
             <span>
               {user
                 ? user.phone
-                : "Se connecter"}
+                : t("header.signIn")}
             </span>
           </div>
 

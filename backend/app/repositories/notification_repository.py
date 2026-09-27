@@ -62,8 +62,8 @@ class NotificationRepository:
                 Notification.user_id
                 == user_id,
 
-                Notification.is_read
-                .is_(False),
+                Notification.read_at
+                .is_(None),
             )
         )
 
