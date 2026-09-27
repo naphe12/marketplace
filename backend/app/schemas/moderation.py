@@ -2,17 +2,29 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
+
+ReportReason = Literal[
+    "FRAUD",
+    "PROHIBITED_ITEM",
+    "MISLEADING",
+    "DUPLICATE",
+    "OTHER",
+    "MESSAGE_ABUSE",
+    "SPAM",
+    "INAPPROPRIATE",
+    "SCAM",
+]
 
 
 class ReportCreate(BaseModel):
     target_type: str
     target_id: UUID
 
-    reason: str = Field(
-        min_length=3,
-        max_length=50,
-    )
+    reason: ReportReason
 
     description: str | None = Field(
         default=None,

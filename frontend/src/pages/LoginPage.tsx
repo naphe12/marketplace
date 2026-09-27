@@ -16,6 +16,10 @@ import {
 } from "react-router-dom";
 
 import {
+  apiRequest,
+} from "../api/client";
+
+import {
   useAuth,
 } from "../auth/AuthContext";
 
@@ -24,7 +28,7 @@ import {
 } from "../i18n/I18nProvider";
 
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "reset";
 
 
 export default function LoginPage() {
@@ -55,6 +59,15 @@ export default function LoginPage() {
 
   const [password, setPassword] =
     useState("");
+
+  const [resetCode, setResetCode] =
+    useState("");
+
+  const [resetRequested, setResetRequested] =
+    useState(false);
+
+  const [notice, setNotice] =
+    useState<string | null>(null);
 
   const [error, setError] =
     useState<string | null>(null);
@@ -87,8 +100,41 @@ export default function LoginPage() {
 
     setLoading(true);
     setError(null);
+    setNotice(null);
 
     try {
+      if (mode === "reset") {
+        if (!resetRequested) {
+          await apiRequest(
+            "/auth/password-reset/request",
+            {
+              method: "POST",
+              body: JSON.stringify({ phone }),
+            },
+          );
+          setResetRequested(true);
+          setNotice("Si le compte existe, un code vient d'être envoyé.");
+        } else {
+          await apiRequest(
+            "/auth/password-reset/confirm",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                phone,
+                code: resetCode,
+                new_password: password,
+              }),
+            },
+          );
+          setMode("login");
+          setResetRequested(false);
+          setResetCode("");
+          setPassword("");
+          setNotice("Mot de passe mis à jour. Vous pouvez vous connecter.");
+        }
+        return;
+      }
+
       if (mode === "register") {
         await register({
           phone,
@@ -145,7 +191,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <h1>{mode === "register" ? t("auth.createAccount") : t("auth.login")}</h1>
+        <h1>{mode === "register" ? t("auth.createAccount") : mode === "reset" ? "Mot de passe oublié" : t("auth.login")}</h1>
 
         {mode === "register" && (
           <div className="auth-grid-two">
@@ -199,22 +245,35 @@ export default function LoginPage() {
           </label>
         )}
 
-        <label>
-          {t("auth.password")}
+        {mode === "reset" && resetRequested && (
+          <label>
+            Code reçu
+            <input
+              value={resetCode}
+              onChange={event => setResetCode(event.target.value)}
+              required
+            />
+          </label>
+        )}
 
-          <input
-            type="password"
-            value={password}
-            onChange={event =>
-              setPassword(
-                event.target.value,
-              )
-            }
-            minLength={mode === "register" ? 8 : undefined}
-            autoComplete={mode === "register" ? "new-password" : "current-password"}
-            required
-          />
-        </label>
+        {(mode !== "reset" || resetRequested) && (
+          <label>
+            {mode === "reset" ? "Nouveau mot de passe" : t("auth.password")}
+
+            <input
+              type="password"
+              value={password}
+              onChange={event =>
+                setPassword(
+                  event.target.value,
+                )
+              }
+              minLength={mode === "register" || mode === "reset" ? 8 : undefined}
+              autoComplete={mode === "register" || mode === "reset" ? "new-password" : "current-password"}
+              required
+            />
+          </label>
+        )}
 
         {mode === "register" && (
           <p className="auth-hint">
@@ -223,8 +282,20 @@ export default function LoginPage() {
         )}
 
         {mode === "login" && (
+          <button type="button" className="text-button" onClick={() => { setMode("reset"); setError(null); setNotice(null); }}>
+            Mot de passe oublié ?
+          </button>
+        )}
+
+        {mode === "reset" && (
+          <button type="button" className="text-button" onClick={() => { setMode("login"); setResetRequested(false); setResetCode(""); }}>
+            Retour à la connexion
+          </button>
+        )}
+
+        {notice && (
           <p className="auth-hint">
-            {t("auth.forgotHint")}
+            {notice}
           </p>
         )}
 
@@ -242,10 +313,14 @@ export default function LoginPage() {
           {loading
             ? mode === "register"
               ? t("auth.creating")
-              : t("auth.signingIn")
+              : mode === "reset"
+                ? "Traitement..."
+                : t("auth.signingIn")
             : mode === "register"
               ? t("auth.createMyAccount")
-              : t("auth.signIn")}
+              : mode === "reset"
+                ? resetRequested ? "Réinitialiser" : "Recevoir un code"
+                : t("auth.signIn")}
         </button>
       </form>
 

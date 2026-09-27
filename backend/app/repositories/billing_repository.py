@@ -38,3 +38,18 @@ class BillingRepository:
         )
 
         return result.scalar_one_or_none()
+    @staticmethod
+    async def get_payment_by_external_reference(
+        db: AsyncSession,
+        external_reference: str,
+    ) -> BillingPayment | None:
+
+        result = await db.execute(
+            select(BillingPayment)
+            .where(
+                BillingPayment.external_reference
+                == external_reference
+            )
+        )
+
+        return result.scalar_one_or_none()

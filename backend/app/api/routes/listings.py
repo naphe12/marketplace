@@ -392,6 +392,24 @@ async def search_listings(
 
     allow_offers: bool | None = None,
 
+    latitude: Decimal | None = Query(
+        default=None,
+        ge=-90,
+        le=90,
+    ),
+
+    longitude: Decimal | None = Query(
+        default=None,
+        ge=-180,
+        le=180,
+    ),
+
+    radius_km: Decimal | None = Query(
+        default=None,
+        gt=0,
+        le=500,
+    ),
+
     sort: str = Query(
         default="newest",
         pattern=(
@@ -434,6 +452,10 @@ async def search_listings(
             price_type=price_type,
 
             allow_offers=allow_offers,
+
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
 
             sort=sort,
 

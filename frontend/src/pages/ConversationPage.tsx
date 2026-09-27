@@ -83,6 +83,9 @@ export default function ConversationPage() {
   const [text, setText] =
     useState("");
 
+  const [attachmentUrl, setAttachmentUrl] =
+    useState("");
+
   const [loading, setLoading] =
     useState(true);
 
@@ -251,11 +254,14 @@ export default function ConversationPage() {
 
     const body = text.trim();
 
-    if (!body) {
+    const attachment = attachmentUrl.trim();
+
+    if (!body && !attachment) {
       return;
     }
 
     setText("");
+    setAttachmentUrl("");
     setError("");
     setSending(true);
 
@@ -268,7 +274,9 @@ export default function ConversationPage() {
             authenticated: true,
 
             body: JSON.stringify({
-              body,
+              body: body || null,
+              attachment_url: attachment || null,
+              attachment_name: attachment ? attachment.split("/").pop() || attachment : null,
             }),
           },
         );
@@ -279,6 +287,7 @@ export default function ConversationPage() {
       ]);
     } catch (cause) {
       setText(body);
+      setAttachmentUrl(attachment);
 
       setError(
         cause instanceof Error
@@ -287,6 +296,37 @@ export default function ConversationPage() {
       );
     } finally {
       setSending(false);
+    }
+  }
+
+
+  async function deleteMessage(message: Message) {
+    if (!conversationId) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      const updated = await apiRequest<Message>(
+        `/conversations/${conversationId}/messages/${message.id}`,
+        {
+          method: "DELETE",
+          authenticated: true,
+        },
+      );
+
+      setMessages(current => current.map(item => (
+        item.id === updated.id
+          ? updated
+          : item
+      )));
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de supprimer le message.",
+      );
     }
   }
 
@@ -914,6 +954,7 @@ export default function ConversationPage() {
                   onMeetupResponse={item.message.message_type === "MEETUP" ? respondToMeetup : undefined}
                   onMeetupEdit={editMeetup}
                   onMeetupCancel={cancelMeetup}
+                  onDelete={deleteMessage}
                   onReport={reportingMessageId === item.message.id ? undefined : reportMessage}
                 />
               );
@@ -988,8 +1029,10 @@ export default function ConversationPage() {
 
         <MessageComposer
           text={text}
+          attachmentUrl={attachmentUrl}
           sending={sending}
           onChange={setText}
+          onAttachmentChange={setAttachmentUrl}
           onSubmit={() =>
             void sendMessage()
           }

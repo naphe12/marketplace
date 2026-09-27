@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.publication import PublicationResponse
 
@@ -33,6 +33,18 @@ class PaymentCreate(BaseModel):
     provider: str | None = None
 
 
+class PaymentFailureRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class PaymentWebhookPayload(BaseModel):
+    reference: str
+    status: str
+    provider_transaction_id: str | None = None
+    failure_reason: str | None = None
+    provider_response: dict | None = None
+
+
 class BillingPaymentResponse(BaseModel):
     id: UUID
 
@@ -45,8 +57,11 @@ class BillingPaymentResponse(BaseModel):
     provider: str | None
 
     status: str
+    external_reference: str | None = None
+    provider_transaction_id: str | None = None
 
     paid_at: datetime | None
+    failed_at: datetime | None = None
 
     model_config = ConfigDict(
         from_attributes=True

@@ -128,7 +128,9 @@ export default function Header() {
           <Bell size={21} />
 
           {unreadNotifications > 0 && (
-            <span className="notification-dot" />
+            <span className="notification-dot">
+              {unreadNotifications > 9 ? "9+" : unreadNotifications}
+            </span>
           )}
         </Link>
 

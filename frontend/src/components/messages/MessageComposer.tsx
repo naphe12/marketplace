@@ -1,4 +1,5 @@
 import {
+  Link as LinkIcon,
   Send,
 } from "lucide-react";
 import type {
@@ -8,16 +9,20 @@ import type {
 
 type Props = {
   text: string;
+  attachmentUrl: string;
   sending?: boolean;
   onChange: (value: string) => void;
+  onAttachmentChange: (value: string) => void;
   onSubmit: () => void;
 };
 
 
 export default function MessageComposer({
   text,
+  attachmentUrl,
   sending = false,
   onChange,
+  onAttachmentChange,
   onSubmit,
 }: Props) {
   function submit(event: FormEvent) {
@@ -27,15 +32,28 @@ export default function MessageComposer({
 
   return (
     <form className="message-compose" onSubmit={submit}>
-      <input
-        value={text}
-        onChange={event => onChange(event.target.value)}
-        placeholder="Votre message"
-        maxLength={3000}
-        disabled={sending}
-      />
+      <div className="message-compose__fields">
+        <input
+          value={text}
+          onChange={event => onChange(event.target.value)}
+          placeholder="Votre message"
+          maxLength={3000}
+          disabled={sending}
+        />
 
-      <button type="submit" disabled={sending || !text.trim()}>
+        <label className="message-attachment-field">
+          <LinkIcon size={15} />
+          <input
+            value={attachmentUrl}
+            onChange={event => onAttachmentChange(event.target.value)}
+            placeholder="Lien pièce jointe"
+            maxLength={2000}
+            disabled={sending}
+          />
+        </label>
+      </div>
+
+      <button type="submit" disabled={sending || (!text.trim() && !attachmentUrl.trim())}>
         <Send size={17} />
         <span>{sending ? "Envoi..." : "Envoyer"}</span>
       </button>

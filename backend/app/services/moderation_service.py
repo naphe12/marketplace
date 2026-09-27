@@ -27,6 +27,19 @@ from app.services.notification_service import NotificationService
 from sqlalchemy import select
 
 
+ALLOWED_REPORT_REASONS = {
+    "FRAUD",
+    "PROHIBITED_ITEM",
+    "MISLEADING",
+    "DUPLICATE",
+    "OTHER",
+    "MESSAGE_ABUSE",
+    "SPAM",
+    "INAPPROPRIATE",
+    "SCAM",
+}
+
+
 class ModerationService:
 
     @staticmethod
@@ -63,12 +76,20 @@ class ModerationService:
                 ),
             )
 
+        reason = reason.upper()
+
+        if reason not in ALLOWED_REPORT_REASONS:
+            raise HTTPException(
+                status_code=400,
+                detail="Motif de signalement invalide.",
+            )
+
         report = Report(
             reporter_id=reporter_id,
             target_type=target_type,
             target_id=target_id,
 
-            reason=reason.upper(),
+            reason=reason,
             description=description,
 
             status="PENDING",

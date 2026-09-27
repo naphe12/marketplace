@@ -1,5 +1,6 @@
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.user import User
 
@@ -14,6 +15,7 @@ class UserRepository:
 
         result = await db.execute(
             select(User)
+            .options(selectinload(User.profile))
             .where(User.phone == phone)
         )
 
@@ -27,6 +29,7 @@ class UserRepository:
 
         result = await db.execute(
             select(User)
+            .options(selectinload(User.profile))
             .where(User.email == email)
         )
 
@@ -40,6 +43,7 @@ class UserRepository:
 
         result = await db.execute(
             select(User)
+            .options(selectinload(User.profile))
             .where(User.id == user_id)
         )
 

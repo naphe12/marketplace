@@ -14,7 +14,6 @@ import {
 
 import {
   Link,
-  useNavigate,
   useParams,
 } from "react-router-dom";
 
@@ -53,6 +52,19 @@ type BillingPayment = {
   payment_method: string;
   provider: string | null;
   status: string;
+  external_reference: string | null;
+  provider_transaction_id: string | null;
+  paid_at: string | null;
+  failed_at: string | null;
+};
+
+type PaymentReceipt = {
+  order_number: string;
+  order_status: string;
+  subtotal: string;
+  discount_amount: string;
+  total_amount: string;
+  currency: string;
   paid_at: string | null;
 };
 
@@ -89,7 +101,6 @@ export default function ListingCheckoutPage() {
     packageId,
   } = useParams();
 
-  const navigate = useNavigate();
   const [packages, setPackages] = useState<ListingPackage[]>([]);
   const [listing, setListing] = useState<SellerListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +110,7 @@ export default function ListingCheckoutPage() {
   const [error, setError] = useState("");
   const [order, setOrder] = useState<PublicationOrder | null>(null);
   const [payment, setPayment] = useState<BillingPayment | null>(null);
+  const [receipt, setReceipt] = useState<PaymentReceipt | null>(null);
   const [selectedProvider, setSelectedProvider] = useState(paymentProviders[0]);
 
 
@@ -177,6 +189,7 @@ export default function ListingCheckoutPage() {
       );
 
       setOrder(result);
+      setReceipt(null);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -245,7 +258,15 @@ export default function ListingCheckoutPage() {
         result.order_status === "PAID" ||
         result.status === "PAID"
       ) {
-        navigate(`/listings/${listingId}`);
+        setPayment(current => current ? { ...current, status: "SUCCESS" } : current);
+
+        if (order) {
+          const loadedReceipt = await apiRequest<PaymentReceipt>(
+            `/billing/orders/${order.id}/receipt`,
+            { authenticated: true },
+          );
+          setReceipt(loadedReceipt);
+        }
       }
     } catch (cause) {
       setError(
@@ -257,6 +278,67 @@ export default function ListingCheckoutPage() {
       setPaying(false);
     }
   }
+
+  async function cancelOrder() {
+    if (!order) {
+      return;
+    }
+
+    setPaying(true);
+    setError("");
+
+    try {
+      const cancelled = await apiRequest<PublicationOrder>(
+        `/billing/orders/${order.id}/cancel`,
+        {
+          method: "POST",
+          authenticated: true,
+        },
+      );
+      setOrder(current => current ? { ...current, status: cancelled.status } : current);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible d'annuler la commande.",
+      );
+    } finally {
+      setPaying(false);
+    }
+  }
+
+
+  async function markPaymentFailed() {
+    if (!payment) {
+      return;
+    }
+
+    setPaying(true);
+    setError("");
+
+    try {
+      const failed = await apiRequest<BillingPayment>(
+        `/billing/payments/${payment.id}/fail`,
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            reason: "Echec signalé depuis le checkout.",
+          }),
+        },
+      );
+      setPayment(failed);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de marquer le paiement en échec.",
+      );
+    } finally {
+      setPaying(false);
+    }
+  }
+
 
 
   return (
@@ -386,6 +468,7 @@ export default function ListingCheckoutPage() {
                   <strong>Paiement initialisé</strong>
                   <span>
                     {payment.provider ?? payment.payment_method} - {payment.status}
+                    {payment.external_reference ? ` - ${payment.external_reference}` : ""}
                   </span>
                 </div>
               </div>
@@ -414,17 +497,49 @@ export default function ListingCheckoutPage() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className="primary-button inline-button"
-              disabled={!payment || paying}
-              onClick={() => void confirmTestPayment()}
-            >
-              {paying && <Loader2 size={16} />}
-              {paying
-                ? "Confirmation..."
-                : "Confirmer le paiement test"}
-            </button>
+            <div className="checkout-action-row">
+              <button
+                type="button"
+                className="primary-button inline-button"
+                disabled={!payment || paying || payment.status === "FAILED"}
+                onClick={() => void confirmTestPayment()}
+              >
+                {paying && <Loader2 size={16} />}
+                {paying
+                  ? "Confirmation..."
+                  : "Confirmer le paiement test"}
+              </button>
+
+              <button
+                type="button"
+                className="secondary-button inline-button"
+                disabled={!payment || paying || payment.status === "SUCCESS"}
+                onClick={() => void markPaymentFailed()}
+              >
+                Marquer échoué
+              </button>
+
+              <button
+                type="button"
+                className="secondary-button inline-button"
+                disabled={!order || paying || order.status === "PAID"}
+                onClick={() => void cancelOrder()}
+              >
+                Annuler
+              </button>
+            </div>
+
+            {receipt && (
+              <div className="checkout-success">
+                <CheckCircle2 size={22} />
+                <div>
+                  <strong>Reçu {receipt.order_number}</strong>
+                  <span>
+                    {Number(receipt.total_amount).toLocaleString("fr-FR")} {receipt.currency} - {receipt.order_status}
+                  </span>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>

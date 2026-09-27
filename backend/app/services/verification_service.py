@@ -26,6 +26,7 @@ from app.services.notification_service import NotificationService
 from app.services.reputation_service import (
     ReputationService,
 )
+from app.services.sms_service import SmsService
 
 
 otp_hash = PasswordHash.recommended()
@@ -77,18 +78,15 @@ class VerificationService:
 
         db.add(challenge)
 
-        await db.commit()
+        await SmsService.send_sms(
+            user.phone,
+            f"Votre code de vérification est {code}. Il expire dans 10 minutes.",
+        )
 
-        # DEV seulement.
-        #
-        # Plus tard :
-        # await SmsProvider.send(user.phone, code)
+        await db.commit()
 
         return {
             "message": "Code de vérification envoyé.",
-
-            # À supprimer impérativement en production.
-            "dev_code": code,
         }
 
     @staticmethod

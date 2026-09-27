@@ -137,6 +137,23 @@ export default function LocationsPage() {
     setAttempt(value => value + 1);
   }
 
+  function exportCsv() {
+    const headers = ["id", "name", "area_type", "parent_id", "code", "latitude", "longitude", "active"];
+    const rows = areas.map(area => headers.map(header => {
+      const value = area[header as keyof AdminArea];
+      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }).join(","));
+    const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "administrative-areas.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="admin-page">
       <div className="admin-page-heading">
@@ -145,6 +162,10 @@ export default function LocationsPage() {
           <h1>Localisation</h1>
           <p>Corrigez progressivement province, commune, zone et colline/quartier.</p>
         </div>
+
+        <button type="button" className="secondary-button inline-button" onClick={exportCsv}>
+          Export CSV
+        </button>
       </div>
       {error && <p className="form-error">{error}</p>}
       <div className="admin-split">

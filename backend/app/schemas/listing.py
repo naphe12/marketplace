@@ -149,6 +149,8 @@ class ListingResponse(BaseModel):
 
     published_at: datetime | None
     expires_at: datetime | None
+    boost_starts_at: datetime | None
+    boost_ends_at: datetime | None
 
     created_at: datetime
     updated_at: datetime
@@ -188,6 +190,8 @@ class ListingCardResponse(BaseModel):
     created_at: datetime
     published_at: datetime | None
     expires_at: datetime | None
+    boost_starts_at: datetime | None
+    boost_ends_at: datetime | None
 
     images: list[ListingImageResponse] = []
 

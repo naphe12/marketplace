@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
+
+from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.billing import BillingPayment
@@ -15,6 +17,7 @@ from app.repositories.publication_repository import (
     PublicationRepository,
 )
 from app.services.notification_service import NotificationService
+from app.services.payment_provider import PaymentProvider
 
 
 class BillingService:
@@ -26,6 +29,7 @@ class BillingService:
         user_id: UUID,
         payment_method: str,
         provider: str | None,
+        user_phone: str = "",
     ):
         order = await BillingRepository.get_order(
             db,
@@ -81,6 +85,28 @@ class BillingService:
         )
 
         db.add(payment)
+        await db.flush()
+
+        if settings.PAYMENT_PROVIDER_BASE_URL and settings.PAYMENT_PROVIDER_API_KEY:
+            provider_response = await PaymentProvider.initialize_payment(
+                payment_id=str(payment.external_reference),
+                amount=payment.amount,
+                currency=payment.currency,
+                phone=user_phone,
+                callback_url=(
+                    f"{settings.PUBLIC_API_URL.rstrip('/')}"
+                    "/api/v1/billing/webhooks/provider"
+                ),
+            )
+            payment.provider_response = provider_response
+            payment.provider_transaction_id = provider_response.get("transaction_id")
+        elif not settings.SIMULATED_PAYMENTS_ENABLED:
+            raise HTTPException(
+                status_code=503,
+                detail="Provider de paiement non configuré.",
+            )
+        else:
+            payment.provider_response = {"mode": "SIMULATED"}
 
         await db.commit()
         await db.refresh(payment)
@@ -176,9 +202,10 @@ class BillingService:
         payment.status = "SUCCESS"
         payment.paid_at = now
 
-        payment.provider_transaction_id = (
-            f"SIM-{uuid4().hex[:12].upper()}"
-        )
+        if not payment.provider_transaction_id:
+            payment.provider_transaction_id = (
+                f"SIM-{uuid4().hex[:12].upper()}"
+            )
 
         order.status = "PAID"
         order.paid_at = now
@@ -193,6 +220,8 @@ class BillingService:
             listing.published_at = now
 
         listing.expires_at = ends_at
+        listing.boost_starts_at = now
+        listing.boost_ends_at = ends_at
 
         await NotificationService.create(
             db,
@@ -230,6 +259,113 @@ class BillingService:
 
             "published_at": listing.published_at,
             "expires_at": listing.expires_at,
+        }
+
+    @staticmethod
+    async def fail_payment(
+        db: AsyncSession,
+        payment_id: UUID,
+        user_id: UUID,
+        reason: str | None = None,
+    ):
+        payment = await BillingRepository.get_payment(db, payment_id)
+
+        if not payment or payment.user_id != user_id:
+            raise HTTPException(status_code=404, detail="Paiement introuvable.")
+
+        if payment.status in {"SUCCESS", "PAID"}:
+            raise HTTPException(status_code=400, detail="Ce paiement est déjà confirmé.")
+
+        now = datetime.now(timezone.utc)
+        payment.status = "FAILED"
+        payment.failed_at = now
+        payment.provider_response = {
+            **(payment.provider_response or {}),
+            "failure_reason": reason,
+        }
+
+        order = await BillingRepository.get_order(db, payment.billing_order_id)
+        if order and order.status != "PAID":
+            order.status = "PAYMENT_FAILED"
+
+        await db.commit()
+        await db.refresh(payment)
+        return payment
+
+    @staticmethod
+    async def cancel_order(
+        db: AsyncSession,
+        order_id: UUID,
+        user_id: UUID,
+    ):
+        order = await BillingRepository.get_order(db, order_id)
+
+        if not order or order.user_id != user_id:
+            raise HTTPException(status_code=404, detail="Commande introuvable.")
+
+        if order.status == "PAID":
+            raise HTTPException(status_code=400, detail="Une commande payée ne peut pas être annulée.")
+
+        order.status = "CANCELLED"
+        order.cancelled_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(order)
+        return order
+
+    @staticmethod
+    async def provider_webhook(
+        db: AsyncSession,
+        *,
+        reference: str,
+        status_value: str,
+        provider_transaction_id: str | None = None,
+        failure_reason: str | None = None,
+        provider_response: dict | None = None,
+    ):
+        payment = await BillingRepository.get_payment_by_external_reference(db, reference)
+        if not payment:
+            raise HTTPException(status_code=404, detail="Paiement introuvable.")
+
+        normalized = status_value.upper()
+        if normalized in {"SUCCESS", "PAID", "COMPLETED"}:
+            return await BillingService.confirm_payment(db, payment.id, payment.user_id)
+
+        if normalized in {"FAILED", "CANCELLED", "EXPIRED"}:
+            payment.status = "FAILED" if normalized != "CANCELLED" else "CANCELLED"
+            payment.failed_at = datetime.now(timezone.utc)
+            payment.provider_transaction_id = provider_transaction_id or payment.provider_transaction_id
+            payment.provider_response = provider_response or {"failure_reason": failure_reason}
+            order = await BillingRepository.get_order(db, payment.billing_order_id)
+            if order and order.status != "PAID":
+                order.status = "PAYMENT_FAILED" if normalized != "CANCELLED" else "CANCELLED"
+            await db.commit()
+            await db.refresh(payment)
+            return payment
+
+        payment.provider_response = provider_response or payment.provider_response
+        await db.commit()
+        await db.refresh(payment)
+        return payment
+
+    @staticmethod
+    async def get_receipt(
+        db: AsyncSession,
+        order_id: UUID,
+        user_id: UUID,
+    ):
+        order = await BillingRepository.get_order(db, order_id)
+        if not order or order.user_id != user_id:
+            raise HTTPException(status_code=404, detail="Commande introuvable.")
+
+        return {
+            "order_number": order.order_number,
+            "order_status": order.status,
+            "listing_id": order.listing_id,
+            "subtotal": order.subtotal,
+            "discount_amount": order.discount_amount,
+            "total_amount": order.total_amount,
+            "currency": order.currency,
+            "paid_at": order.paid_at,
         }
 
     @staticmethod
@@ -327,6 +463,8 @@ class BillingService:
             listing.published_at = now
 
         listing.expires_at = expires_at
+        listing.boost_starts_at = now
+        listing.boost_ends_at = expires_at
 
         await NotificationService.create(
             db,

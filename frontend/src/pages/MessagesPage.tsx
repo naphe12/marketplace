@@ -144,6 +144,7 @@ export default function MessagesPage() {
         <aside className="messages-list">
           <ConversationList
             conversations={conversations}
+            currentUserId={user.id}
           />
         </aside>
       )}

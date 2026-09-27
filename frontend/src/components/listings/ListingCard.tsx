@@ -123,6 +123,13 @@ export default function ListingCard({
   const condition =
     formatCondition(listing.condition);
 
+  const isBoosted = Boolean(
+    listing.boost_starts_at &&
+      listing.boost_ends_at &&
+      new Date(listing.boost_starts_at) <= new Date() &&
+      new Date(listing.boost_ends_at) > new Date(),
+  );
+
 
   return (
     <Link
@@ -148,6 +155,12 @@ export default function ListingCard({
         {condition && (
           <span className="listing-badge">
             {condition}
+          </span>
+        )}
+
+        {isBoosted && (
+          <span className="listing-badge listing-badge--boosted">
+            Boostée
           </span>
         )}
 

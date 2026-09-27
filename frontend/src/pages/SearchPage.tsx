@@ -108,6 +108,9 @@ export default function SearchPage() {
   const condition = getParam(params, "condition");
   const priceType = getParam(params, "price_type");
   const allowOffers = getParam(params, "allow_offers");
+  const latitude = getParam(params, "latitude");
+  const longitude = getParam(params, "longitude");
+  const radiusKm = getParam(params, "radius_km");
 
   const [draft, setDraft] = useState({
     q: query,
@@ -118,6 +121,9 @@ export default function SearchPage() {
     condition,
     price_type: priceType,
     allow_offers: allowOffers,
+    latitude,
+    longitude,
+    radius_km: radiusKm,
     sort,
   });
 
@@ -168,6 +174,9 @@ export default function SearchPage() {
       condition,
       price_type: priceType,
       allow_offers: allowOffers,
+      latitude,
+      longitude,
+      radius_km: radiusKm,
       sort,
     });
   }, [
@@ -179,6 +188,9 @@ export default function SearchPage() {
     condition,
     priceType,
     allowOffers,
+    latitude,
+    longitude,
+    radiusKm,
     sort,
   ]);
 
@@ -251,6 +263,9 @@ export default function SearchPage() {
         condition,
         price_type: priceType,
         allow_offers: allowOffers,
+        latitude,
+        longitude,
+        radius_km: radiusKm,
         sort,
         offset: String(offset),
         limit: String(PAGE_SIZE),
@@ -293,6 +308,9 @@ export default function SearchPage() {
     condition,
     priceType,
     allowOffers,
+    latitude,
+    longitude,
+    radiusKm,
     sort,
     offset,
     attempt,
@@ -340,6 +358,9 @@ export default function SearchPage() {
     condition,
     price_type: priceType,
     allow_offers: allowOffers,
+    latitude,
+    longitude,
+    radius_km: radiusKm,
     sort,
   });
 
@@ -425,6 +446,9 @@ export default function SearchPage() {
         condition,
         price_type: priceType,
         allow_offers: allowOffers,
+        latitude,
+        longitude,
+        radius_km: radiusKm,
         sort,
         offset: String(nextOffset),
       }),
@@ -573,6 +597,55 @@ export default function SearchPage() {
               <option value="">{t("search.offersAny")}</option>
               <option value="true">{t("search.offersAccepted")}</option>
               <option value="false">{t("search.noOffers")}</option>
+            </select>
+          </label>
+
+          <label className="form-field">
+            <span>Latitude</span>
+            <input
+              type="number"
+              step="0.000001"
+              min="-90"
+              max="90"
+              value={draft.latitude}
+              onChange={event => setDraft(current => ({
+                ...current,
+                latitude: event.target.value,
+              }))}
+            />
+          </label>
+
+          <label className="form-field">
+            <span>Longitude</span>
+            <input
+              type="number"
+              step="0.000001"
+              min="-180"
+              max="180"
+              value={draft.longitude}
+              onChange={event => setDraft(current => ({
+                ...current,
+                longitude: event.target.value,
+              }))}
+            />
+          </label>
+
+          <label className="form-field">
+            <span>Rayon</span>
+            <select
+              value={draft.radius_km}
+              onChange={event => setDraft(current => ({
+                ...current,
+                radius_km: event.target.value,
+              }))}
+            >
+              <option value="">Sans rayon</option>
+              <option value="2">2 km</option>
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="25">25 km</option>
+              <option value="50">50 km</option>
+              <option value="100">100 km</option>
             </select>
           </label>
 

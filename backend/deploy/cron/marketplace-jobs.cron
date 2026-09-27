@@ -1,0 +1,12 @@
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Run from the backend directory with the production environment loaded.
+# Example install:
+#   crontab backend/deploy/cron/marketplace-jobs.cron
+#
+# In a container scheduler, use the same commands as dedicated scheduled jobs.
+
+*/15 * * * * cd /app/backend && python -m app.jobs.saved_search_alerts --lookback-minutes 20
+0 * * * * cd /app/backend && python -m app.jobs.listing_expiry
+*/10 * * * * cd /app/backend && python -m app.jobs.meetup_reminders --reminder-minutes 60 --window-minutes 15

@@ -9,14 +9,25 @@ import {
 import { apiRequest } from "../api/client";
 
 
+type UserProfile = {
+  first_name: string | null;
+  last_name: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  preferred_language: string;
+};
+
 type User = {
   id: string;
   phone: string;
   email: string | null;
   phone_verified: boolean;
   email_verified: boolean;
+  identity_verification_status: string | null;
   account_type: string;
   status: string;
+  profile: UserProfile | null;
   is_admin?: boolean;
 };
 

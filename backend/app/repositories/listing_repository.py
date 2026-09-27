@@ -11,10 +11,11 @@ from sqlalchemy.orm import selectinload
 
 from app.models.listing import Listing
 
+import math
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import selectinload
 
 
@@ -122,6 +123,9 @@ class ListingRepository:
 
         allow_offers: bool | None = None,
         published_after: datetime | None = None,
+        latitude: Decimal | None = None,
+        longitude: Decimal | None = None,
+        radius_km: Decimal | None = None,
 
         sort: str = "newest",
 
@@ -216,6 +220,29 @@ class ListingRepository:
                 >= published_after
             )
 
+        if (
+            latitude is not None
+            and longitude is not None
+            and radius_km is not None
+            and radius_km > 0
+        ):
+            lat = float(latitude)
+            lng = float(longitude)
+            radius = float(radius_km)
+            lat_delta = radius / 111.0
+            lng_delta = radius / max(
+                111.0 * math.cos(math.radians(lat)),
+                0.01,
+            )
+            filters.extend([
+                Listing.latitude.is_not(None),
+                Listing.longitude.is_not(None),
+                Listing.latitude >= Decimal(str(lat - lat_delta)),
+                Listing.latitude <= Decimal(str(lat + lat_delta)),
+                Listing.longitude >= Decimal(str(lng - lng_delta)),
+                Listing.longitude <= Decimal(str(lng + lng_delta)),
+            ])
+
         # ---------------------------------
         # Nombre total
         # ---------------------------------
@@ -253,28 +280,45 @@ class ListingRepository:
         # Tri
         # ---------------------------------
 
+        active_boost = and_(
+            Listing.boost_starts_at.is_not(None),
+            Listing.boost_starts_at <= func.now(),
+            Listing.boost_ends_at.is_not(None),
+            Listing.boost_ends_at > func.now(),
+        )
+        boost_rank = case(
+            (active_boost, 0),
+            else_=1,
+        )
+
         if sort == "price_asc":
 
             query = query.order_by(
-                Listing.price.asc().nullslast()
+                boost_rank,
+                Listing.price.asc().nullslast(),
+                Listing.created_at.desc(),
             )
 
         elif sort == "price_desc":
 
             query = query.order_by(
-                Listing.price.desc().nullslast()
+                boost_rank,
+                Listing.price.desc().nullslast(),
+                Listing.created_at.desc(),
             )
 
         elif sort == "oldest":
 
             query = query.order_by(
-                Listing.created_at.asc()
+                boost_rank,
+                Listing.created_at.asc(),
             )
 
         else:
 
             query = query.order_by(
-                Listing.created_at.desc()
+                boost_rank,
+                Listing.created_at.desc(),
             )
 
         query = (

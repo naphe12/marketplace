@@ -6,6 +6,7 @@ type Props = {
   message: Message;
   mine: boolean;
   meetupResponding?: boolean;
+  onDelete?: (message: Message) => void;
   onReport?: (message: Message) => void;
   meetupStatus?: "PENDING" | "ACCEPTED" | "REJECTED" | "UPDATED" | "CANCELLED";
   meetupRespondable?: boolean;
@@ -27,6 +28,21 @@ type MeetupEventPayload = {
   note?: string | null;
   reason?: string | null;
 };
+
+type AttachmentPayload = {
+  body?: string | null;
+  url?: string;
+  name?: string;
+};
+
+function parseAttachment(content: string): AttachmentPayload | null {
+  try {
+    const parsed = JSON.parse(content) as AttachmentPayload;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 function parseMeetup(content: string): MeetupPayload | null {
   try {
@@ -53,6 +69,7 @@ export default function MessageBubble({
   meetupStatus,
   meetupRespondable = true,
   meetupEditable = false,
+  onDelete,
   onReport,
   onMeetupResponse,
   onMeetupEdit,
@@ -67,6 +84,10 @@ export default function MessageBubble({
 
   const meetupEvent = ["MEETUP_RESPONSE", "MEETUP_UPDATE", "MEETUP_CANCELLED"].includes(message.message_type)
     ? parseMeetupEvent(message.content)
+    : null;
+
+  const attachment = message.message_type === "ATTACHMENT"
+    ? parseAttachment(message.content)
     : null;
 
   return (
@@ -161,6 +182,17 @@ export default function MessageBubble({
               {meetupEvent.note && <p>{meetupEvent.note}</p>}
               {meetupEvent.reason && <p>{meetupEvent.reason}</p>}
             </div>
+          ) : attachment ? (
+            <div className="attachment-message">
+              {attachment.body && <p>{attachment.body}</p>}
+              {attachment.url && (
+                <a href={attachment.url} target="_blank" rel="noreferrer">
+                  {attachment.name || attachment.url}
+                </a>
+              )}
+            </div>
+          ) : message.message_type === "DELETED" ? (
+            <em>Message supprimé</em>
           ) : (
             message.content
           )}
@@ -174,7 +206,15 @@ export default function MessageBubble({
               minute: "2-digit",
             },
           )}
-          {!mine && onReport && (
+          {mine && message.message_type !== "DELETED" && onDelete && (
+            <button type="button" className="message-report-button" onClick={() => onDelete(message)}>
+              Supprimer
+            </button>
+          )}
+          {mine && (
+            <span>{message.read_at ? "Lu" : "Envoyé"}</span>
+          )}
+          {!mine && onReport && message.message_type !== "DELETED" && (
             <button type="button" className="message-report-button" onClick={() => onReport(message)}>
               Signaler
             </button>

@@ -184,6 +184,8 @@ class ConversationService:
         sender_id: UUID,
         content: str,
         message_type: str = "TEXT",
+        attachment_url: str | None = None,
+        attachment_name: str | None = None,
     ) -> Message:
 
         conversation = await ConversationService.get_user_conversation(
@@ -239,11 +241,25 @@ class ConversationService:
 
         now = datetime.now(timezone.utc)
 
+        normalized_type = message_type.upper()
+        message_content = content.strip()
+
+        if attachment_url:
+            normalized_type = "ATTACHMENT"
+            message_content = json.dumps(
+                {
+                    "body": message_content or None,
+                    "url": attachment_url.strip(),
+                    "name": (attachment_name or attachment_url).strip(),
+                },
+                ensure_ascii=False,
+            )
+
         message = Message(
             conversation_id=conversation_id,
             sender_id=sender_id,
-            message_type=message_type.upper(),
-            content=content.strip(),
+            message_type=normalized_type,
+            content=message_content,
         )
 
         conversation.last_message_at = now
@@ -279,6 +295,36 @@ class ConversationService:
 
                 commit=False,
             )
+
+        await db.commit()
+        await db.refresh(message)
+
+        return message
+
+
+    @staticmethod
+    async def delete_message(
+        db: AsyncSession,
+        conversation_id: UUID,
+        message_id: UUID,
+        user_id: UUID,
+    ) -> Message:
+        await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            user_id,
+        )
+
+        message = await db.get(Message, message_id)
+
+        if not message or message.conversation_id != conversation_id:
+            raise HTTPException(status_code=404, detail="Message introuvable.")
+
+        if message.sender_id != user_id:
+            raise HTTPException(status_code=403, detail="Seul l'auteur peut supprimer ce message.")
+
+        message.message_type = "DELETED"
+        message.content = "Message supprimé"
 
         await db.commit()
         await db.refresh(message)

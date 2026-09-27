@@ -14,5 +14,6 @@ export type Message = {
   sender_id: string;
   message_type: string;
   content: string;
+  read_at: string | null;
   created_at: string;
 };

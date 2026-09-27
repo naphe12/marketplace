@@ -6,11 +6,14 @@ import {
   Edit3,
   Eye,
   Heart,
+  Mail,
   MessageCircle,
   LogOut,
   PackagePlus,
   Plus,
+  Save,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
 import {
@@ -34,6 +37,10 @@ import {
 import type {
   Listing,
 } from "../types/listing";
+
+import type {
+  UserReview,
+} from "../types/reputation";
 
 import type {
   Conversation,
@@ -105,6 +112,7 @@ export default function ProfilePage() {
   const {
     user,
     logout,
+    refreshUser,
   } = useAuth();
 
   const [listings, setListings] =
@@ -112,6 +120,9 @@ export default function ProfilePage() {
 
   const [conversations, setConversations] =
     useState<Conversation[]>([]);
+
+  const [reviews, setReviews] =
+    useState<UserReview[]>([]);
 
   const [listingStats, setListingStats] =
     useState<Record<string, ListingStats>>({});
@@ -125,11 +136,53 @@ export default function ProfilePage() {
   const [attempt, setAttempt] =
     useState(0);
 
+  const [profileForm, setProfileForm] =
+    useState({
+      first_name: "",
+      last_name: "",
+      display_name: "",
+      email: "",
+      avatar_url: "",
+      bio: "",
+    });
+
+  const [savingProfile, setSavingProfile] =
+    useState(false);
+
+  const [profileMessage, setProfileMessage] =
+    useState("");
+
+  const [phoneCode, setPhoneCode] =
+    useState("");
+
+  const [phoneVerificationMessage, setPhoneVerificationMessage] =
+    useState("");
+
+  const [phoneVerificationLoading, setPhoneVerificationLoading] =
+    useState(false);
+
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    setProfileForm({
+      first_name: user.profile?.first_name ?? "",
+      last_name: user.profile?.last_name ?? "",
+      display_name: user.profile?.display_name ?? "",
+      email: user.email ?? "",
+      avatar_url: user.profile?.avatar_url ?? "",
+      bio: user.profile?.bio ?? "",
+    });
+  }, [user]);
+
 
   useEffect(() => {
     if (!user) {
       setListings([]);
       setConversations([]);
+      setReviews([]);
       setListingStats({});
       return;
     }
@@ -158,12 +211,19 @@ export default function ProfilePage() {
           authenticated: true,
         },
       ),
+      apiRequest<UserReview[]>(
+        `/transactions/users/${user.id}/reviews`,
+        {
+          authenticated: true,
+        },
+      ),
     ])
-      .then(([loadedListings, loadedConversations, loadedStats]) => {
+      .then(([loadedListings, loadedConversations, loadedStats, loadedReviews]) => {
         if (mounted) {
           setListings(loadedListings);
           setConversations(loadedConversations);
           setListingStats(Object.fromEntries(loadedStats.map(item => [item.listing_id, item])));
+          setReviews(loadedReviews);
         }
       })
       .catch(cause => {
@@ -188,6 +248,67 @@ export default function ProfilePage() {
     user,
     attempt,
   ]);
+
+
+  async function requestPhoneVerification() {
+    setPhoneVerificationLoading(true);
+    setPhoneVerificationMessage("");
+
+    try {
+      await apiRequest(
+        "/verifications/phone/request",
+        {
+          method: "POST",
+          authenticated: true,
+        },
+      );
+
+      setPhoneVerificationMessage("Code envoyé par SMS.");
+    } catch (cause) {
+      setPhoneVerificationMessage(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible d'envoyer le code.",
+      );
+    } finally {
+      setPhoneVerificationLoading(false);
+    }
+  }
+
+
+  async function confirmPhoneVerification() {
+    if (!phoneCode.trim()) {
+      return;
+    }
+
+    setPhoneVerificationLoading(true);
+    setPhoneVerificationMessage("");
+
+    try {
+      await apiRequest(
+        "/verifications/phone/confirm",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            code: phoneCode.trim(),
+          }),
+        },
+      );
+
+      setPhoneCode("");
+      await refreshUser();
+      setPhoneVerificationMessage("Téléphone vérifié.");
+    } catch (cause) {
+      setPhoneVerificationMessage(
+        cause instanceof Error
+          ? cause.message
+          : "Code invalide.",
+      );
+    } finally {
+      setPhoneVerificationLoading(false);
+    }
+  }
 
 
   const stats = useMemo(() => {
@@ -233,6 +354,45 @@ export default function ProfilePage() {
   );
 
 
+  async function saveProfile() {
+    if (!user || savingProfile) {
+      return;
+    }
+
+    setSavingProfile(true);
+    setProfileMessage("");
+
+    try {
+      await apiRequest(
+        "/auth/me",
+        {
+          method: "PATCH",
+          authenticated: true,
+          body: JSON.stringify({
+            email: profileForm.email.trim() || null,
+            first_name: profileForm.first_name.trim() || null,
+            last_name: profileForm.last_name.trim() || null,
+            display_name: profileForm.display_name.trim() || null,
+            avatar_url: profileForm.avatar_url.trim() || null,
+            bio: profileForm.bio.trim() || null,
+          }),
+        },
+      );
+
+      await refreshUser();
+      setProfileMessage("Profil mis à jour.");
+    } catch (cause) {
+      setProfileMessage(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de mettre à jour le profil.",
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+
   if (!user) {
     return (
       <div className="page profile-page">
@@ -256,20 +416,47 @@ export default function ProfilePage() {
   }
 
 
+  const displayName =
+    user.profile?.display_name ||
+    [
+      user.profile?.first_name,
+      user.profile?.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ") ||
+    "Mon espace";
+
+  const avatarLabel =
+    displayName
+      .split(" ")
+      .map(part => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ||
+    user.phone.slice(-2);
+
+  const identityStatus =
+    user.identity_verification_status;
+
+
   return (
     <div className="page profile-page">
       <section className="seller-dashboard-hero">
         <div className="seller-dashboard-identity">
           <div className="seller-dashboard-avatar">
-            {user.phone.slice(-2)}
+            {user.profile?.avatar_url ? (
+              <img src={user.profile.avatar_url} alt="" />
+            ) : (
+              avatarLabel
+            )}
           </div>
 
           <div>
             <span>Compte vendeur</span>
 
-            <h1>Mon espace</h1>
+            <h1>{displayName}</h1>
 
-            <p>{user.phone}</p>
+            <p>{user.profile?.bio || user.phone}</p>
           </div>
         </div>
 
@@ -293,31 +480,166 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <section className="profile-verification-card">
-        <div>
-          <ShieldCheck size={21} />
-
+      <section className="profile-editor-card">
+        <div className="seller-section-heading">
           <div>
-            <strong>Vérification du compte</strong>
-            <span>
-              {user.phone_verified
-                ? "Votre numéro est vérifié."
-                : "Vérifiez votre numéro pour renforcer la confiance."}
-            </span>
+            <span>Profil public</span>
+            <h2>Identité vendeur</h2>
           </div>
+
+          <button
+            type="button"
+            className="primary-button inline-button"
+            disabled={savingProfile}
+            onClick={() => void saveProfile()}
+          >
+            <Save size={16} />
+            {savingProfile ? "Enregistrement..." : "Enregistrer"}
+          </button>
         </div>
 
-        <span
-          className={
-            user.phone_verified
-              ? "profile-verification-badge profile-verification-badge--ok"
-              : "profile-verification-badge"
-          }
-        >
-          {user.phone_verified
-            ? "Vérifié"
-            : "À compléter"}
-        </span>
+        <div className="profile-form-grid">
+          <label className="form-field">
+            Prénom
+            <input
+              value={profileForm.first_name}
+              onChange={event => setProfileForm(current => ({ ...current, first_name: event.target.value }))}
+            />
+          </label>
+
+          <label className="form-field">
+            Nom
+            <input
+              value={profileForm.last_name}
+              onChange={event => setProfileForm(current => ({ ...current, last_name: event.target.value }))}
+            />
+          </label>
+
+          <label className="form-field">
+            Nom affiché
+            <input
+              value={profileForm.display_name}
+              onChange={event => setProfileForm(current => ({ ...current, display_name: event.target.value }))}
+            />
+          </label>
+
+          <label className="form-field">
+            Email
+            <input
+              type="email"
+              value={profileForm.email}
+              onChange={event => setProfileForm(current => ({ ...current, email: event.target.value }))}
+            />
+          </label>
+
+          <label className="form-field profile-form-grid__wide">
+            URL avatar
+            <input
+              value={profileForm.avatar_url}
+              onChange={event => setProfileForm(current => ({ ...current, avatar_url: event.target.value }))}
+            />
+          </label>
+
+          <label className="form-field profile-form-grid__wide">
+            Bio
+            <textarea
+              rows={3}
+              value={profileForm.bio}
+              onChange={event => setProfileForm(current => ({ ...current, bio: event.target.value }))}
+            />
+          </label>
+        </div>
+
+        {profileMessage && (
+          <p className="seller-muted">
+            {profileMessage}
+          </p>
+        )}
+      </section>
+
+      <section className="profile-verification-grid">
+        <article className="profile-verification-card profile-verification-card--stacked">
+          <div>
+            <ShieldCheck size={21} />
+
+            <div>
+              <strong>Téléphone</strong>
+              <span>{user.phone}</span>
+            </div>
+          </div>
+
+          <span className={user.phone_verified ? "profile-verification-badge profile-verification-badge--ok" : "profile-verification-badge"}>
+            {user.phone_verified ? "Vérifié" : "À vérifier"}
+          </span>
+
+          {!user.phone_verified && (
+            <div className="phone-verification-actions">
+              <button
+                type="button"
+                className="secondary-button inline-button"
+                disabled={phoneVerificationLoading}
+                onClick={() => void requestPhoneVerification()}
+              >
+                Recevoir un code
+              </button>
+
+              <input
+                value={phoneCode}
+                onChange={event => setPhoneCode(event.target.value)}
+                placeholder="Code SMS"
+              />
+
+              <button
+                type="button"
+                className="primary-button inline-button"
+                disabled={phoneVerificationLoading || !phoneCode.trim()}
+                onClick={() => void confirmPhoneVerification()}
+              >
+                Vérifier
+              </button>
+
+              {phoneVerificationMessage && (
+                <small>{phoneVerificationMessage}</small>
+              )}
+            </div>
+          )}
+        </article>
+
+        <article className="profile-verification-card">
+          <div>
+            <Mail size={21} />
+
+            <div>
+              <strong>Email</strong>
+              <span>{user.email || "Non renseigné"}</span>
+            </div>
+          </div>
+
+          <span className={user.email_verified ? "profile-verification-badge profile-verification-badge--ok" : "profile-verification-badge"}>
+            {user.email_verified ? "Vérifié" : "À compléter"}
+          </span>
+        </article>
+
+        <article className="profile-verification-card">
+          <div>
+            <UserRound size={21} />
+
+            <div>
+              <strong>Identité</strong>
+              <span>KYC vendeur</span>
+            </div>
+          </div>
+
+          <span className={identityStatus === "VERIFIED" ? "profile-verification-badge profile-verification-badge--ok" : "profile-verification-badge"}>
+            {identityStatus === "VERIFIED"
+              ? "Validée"
+              : identityStatus === "PENDING"
+                ? "En attente"
+                : identityStatus === "REJECTED"
+                  ? "Refusée"
+                  : "Non démarrée"}
+          </span>
+        </article>
       </section>
 
       <section className="seller-stats-grid" aria-label="Résumé vendeur">
@@ -362,6 +684,32 @@ export default function ProfilePage() {
           <span>Vues</span>
           <strong>{stats.views}</strong>
         </article>
+      </section>
+
+
+      <section className="seller-listings-panel">
+        <div className="seller-section-heading">
+          <div>
+            <span>{reviews.length} avis reçu{reviews.length > 1 ? "s" : ""}</span>
+            <h2>Réputation</h2>
+          </div>
+        </div>
+
+        {reviews.length === 0 ? (
+          <p className="seller-muted">
+            Vos avis reçus après transaction apparaîtront ici.
+          </p>
+        ) : (
+          <div className="seller-review-history">
+            {reviews.slice(0, 8).map(review => (
+              <article key={review.id} className="seller-review-history__item">
+                <strong>{review.rating}/5</strong>
+                <p>{review.comment || "Avis sans commentaire."}</p>
+                <small>{new Date(review.created_at).toLocaleDateString("fr-FR")}</small>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="seller-listings-panel">

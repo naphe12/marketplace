@@ -62,6 +62,10 @@ function notificationLink(notification: NotificationItem) {
   }
 
   if (typeof data.transaction_id === "string") {
+    if (typeof data.conversation_id === "string") {
+      return `/messages/${data.conversation_id}`;
+    }
+
     return "/messages";
   }
 

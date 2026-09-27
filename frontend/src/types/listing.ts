@@ -31,6 +31,8 @@ export type Listing = {
   created_at: string;
   published_at: string | null;
   expires_at: string | null;
+  boost_starts_at: string | null;
+  boost_ends_at: string | null;
 
   images: ListingImage[];
 

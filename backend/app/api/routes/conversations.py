@@ -114,17 +114,37 @@ async def send_message(
     current_user=Depends(get_current_user),
 ):
     content = data.body or data.content
-    if not content:
+    if not content and not data.attachment_url:
         raise HTTPException(
             status_code=422,
-            detail="Le message est obligatoire.",
+            detail="Le message ou la pièce jointe est obligatoire.",
         )
 
     return await ConversationService.send_message(
         db,
         conversation_id,
         current_user.id,
-        content,
+        content or "",
+        attachment_url=data.attachment_url,
+        attachment_name=data.attachment_name,
+    )
+
+
+@router.delete(
+    "/conversations/{conversation_id}/messages/{message_id}",
+    response_model=MessageResponse,
+)
+async def delete_message(
+    conversation_id: UUID,
+    message_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.delete_message(
+        db,
+        conversation_id,
+        message_id,
+        current_user.id,
     )
 
 

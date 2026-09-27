@@ -9,7 +9,7 @@ python -m app.jobs.listing_expiry
 
 La migration suppose que le schéma `market` et la table `notifications` existent déjà.
 Planifier la commande avec le planificateur du serveur, par exemple toutes les heures.
-Aucune planification n'est installée automatiquement.
+Un exemple de crontab de production est fourni dans `backend/deploy/cron/marketplace-jobs.cron`.
 
 Les rappels J-3 et J-1 suivent les dates UTC. J0 est envoyé une fois l'heure
 exacte d'expiration passée ; les expirations manquées sont rattrapées au prochain
@@ -32,7 +32,9 @@ python -m app.jobs.saved_search_alerts --lookback-minutes 60
 ```
 
 Planifier cette commande avec le planificateur du serveur, par exemple toutes
-les 15 à 60 minutes selon le volume. La tâche parcourt les recherches
+les 15 à 60 minutes selon le volume. `backend/deploy/cron/marketplace-jobs.cron`
+contient une planification prête à installer, avec un passage toutes les 15 minutes.
+La tâche parcourt les recherches
 sauvegardées avec `alerts_enabled = true`, cherche les annonces ACTIVE publiées
 dans la fenêtre demandée, puis crée une notification `SAVED_SEARCH_MATCH`.
 
