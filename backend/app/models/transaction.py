@@ -66,6 +66,14 @@ class Transaction(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
+    country_code: Mapped[str] = mapped_column(
+        String(2),
+        default="BI",
+        server_default="BI",
+        nullable=False,
+        index=True,
+    )
+
     quantity: Mapped[int] = mapped_column(
         default=1,
         nullable=False,

@@ -30,6 +30,7 @@ import {
 import {
   useI18n,
 } from "../i18n/I18nProvider";
+import { useCountry } from "../market/CountryContext";
 
 import {
   useListingAutosave,
@@ -213,6 +214,7 @@ function PublishEditor({
   resumeId?: string;
 }) {
   const { t } = useI18n();
+  const { countryCode, currency: marketCurrency } = useCountry();
   const navigate =
     useNavigate();
 
@@ -307,7 +309,11 @@ function PublishEditor({
     currency,
     setCurrency,
   ] =
-    useState("BIF");
+    useState(marketCurrency);
+
+  useEffect(() => {
+    setCurrency(marketCurrency);
+  }, [marketCurrency]);
 
   const [
     priceType,
@@ -1113,6 +1119,9 @@ function PublishEditor({
               administrative_area_id:
                 finalAreaId,
 
+              country_code:
+                countryCode,
+
               latitude:
                 approximateLatitude,
 
@@ -1295,6 +1304,7 @@ function PublishEditor({
           <PriceLocationStep
             price={price}
             currency={currency}
+            marketCurrency={marketCurrency}
             priceType={priceType}
             allowOffers={allowOffers}
 

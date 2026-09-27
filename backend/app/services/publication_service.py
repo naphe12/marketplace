@@ -62,6 +62,7 @@ class PublicationService:
         package = await PublicationRepository.get_package(
             db,
             package_id,
+            country_code=listing.country_code,
         )
 
         if not package:

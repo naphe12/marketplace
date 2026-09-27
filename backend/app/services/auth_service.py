@@ -12,6 +12,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.models.country import Country
 from app.models.password_reset import PasswordResetToken
 from app.models.user import User, UserProfile
 from app.repositories.user_repository import UserRepository
@@ -46,6 +47,28 @@ def generate_avatar_data_url(label: str) -> str:
 class AuthService:
 
     @staticmethod
+    async def ensure_active_country(
+        db: AsyncSession,
+        country_code: str | None,
+    ) -> str:
+        normalized = (country_code or "BI").upper()
+        result = await db.execute(
+            select(Country).where(
+                Country.code == normalized,
+                Country.active.is_(True),
+            )
+        )
+
+        if not result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=400,
+                detail="Ce pays n'est pas actif sur la plateforme.",
+            )
+
+        return normalized
+
+
+    @staticmethod
     async def register(
         db: AsyncSession,
         data: RegisterRequest,
@@ -63,9 +86,15 @@ class AuthService:
                 detail="Un utilisateur avec ce téléphone ou cet email existe déjà.",
             )
 
+        country_code = await AuthService.ensure_active_country(
+            db,
+            data.country_code,
+        )
+
         user = User(
             phone=data.phone,
             email=data.email,
+            country_code=country_code,
             password_hash=hash_password(
                 data.password
             ),
@@ -125,6 +154,13 @@ class AuthService:
                 user.email = email
                 user.email_verified = False
 
+        if "country_code" in values:
+            country_code = values.pop("country_code")
+            user.country_code = await AuthService.ensure_active_country(
+                db,
+                country_code,
+            )
+
         if user.profile is None:
             user.profile = UserProfile(user_id=user.id)
 
@@ -164,7 +200,11 @@ class AuthService:
             )
         )
 
-        await SmsService.send_password_reset(user.phone, code)
+        await SmsService.send_password_reset(
+            user.phone,
+            code,
+            country_code=user.country_code,
+        )
         await db.commit()
 
         return {"message": "Si le compte existe, un code a été envoyé."}

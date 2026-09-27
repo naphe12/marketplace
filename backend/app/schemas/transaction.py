@@ -14,6 +14,7 @@ class DeliveryResponse(BaseModel):
     dropoff_address: str
     fee_amount: Decimal
     currency: str
+    country_code: str
     status: str
     tracking_reference: str | None
     proof_url: str | None
@@ -57,6 +58,7 @@ class TransactionResponse(BaseModel):
 
     agreed_price: Decimal
     currency: str
+    country_code: str
     quantity: int
 
     status: str

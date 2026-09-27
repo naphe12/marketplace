@@ -70,6 +70,12 @@ def _str_param(params: dict, key: str) -> str | None:
     return str(value)
 
 
+def _with_default_country(params: dict, country_code: str) -> dict:
+    normalized = dict(params or {})
+    normalized["country_code"] = str(normalized.get("country_code") or country_code).upper()
+    return normalized
+
+
 router = APIRouter(
     prefix="/saved-searches",
     tags=["Saved searches"],
@@ -99,7 +105,7 @@ async def create_saved_search(
     saved_search = SavedSearch(
         user_id=current_user.id,
         name=payload.name.strip(),
-        query_params=payload.query_params,
+        query_params=_with_default_country(payload.query_params, current_user.country_code),
         alerts_enabled=payload.alerts_enabled,
     )
 
@@ -127,12 +133,13 @@ async def saved_search_matches(
     if not saved_search or saved_search.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Recherche sauvegardée introuvable.")
 
-    params = saved_search.query_params or {}
+    params = _with_default_country(saved_search.query_params or {}, current_user.country_code)
     listings, total = await ListingRepository.search(
         db,
         q=_str_param(params, "q"),
         category_id=_uuid_param(params, "category_id"),
         administrative_area_id=_uuid_param(params, "administrative_area_id"),
+        country_code=_str_param(params, "country_code"),
         seller_id=_uuid_param(params, "seller_id"),
         price_min=_decimal_param(params, "price_min"),
         price_max=_decimal_param(params, "price_max"),
@@ -171,7 +178,7 @@ async def update_saved_search(
         saved_search.name = payload.name.strip()
 
     if payload.query_params is not None:
-        saved_search.query_params = payload.query_params
+        saved_search.query_params = _with_default_country(payload.query_params, current_user.country_code)
 
     if payload.alerts_enabled is not None:
         saved_search.alerts_enabled = payload.alerts_enabled

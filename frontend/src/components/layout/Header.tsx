@@ -25,6 +25,7 @@ import {
 } from "../../auth/AuthContext";
 
 import LanguageSwitcher from "../../i18n/LanguageSwitcher";
+import { useCountry } from "../../market/CountryContext";
 import {
   useI18n,
 } from "../../i18n/I18nProvider";
@@ -36,6 +37,7 @@ export default function Header() {
   const { user } = useAuth();
 
   const { t } = useI18n();
+  const { countries, countryCode, setCountryCode } = useCountry();
 
   const [unreadNotifications, setUnreadNotifications] =
     useState(0);
@@ -133,6 +135,19 @@ export default function Header() {
             </span>
           )}
         </Link>
+
+        <label className="country-switcher" aria-label="Pays du marche">
+          <select
+            value={countryCode}
+            onChange={event => setCountryCode(event.target.value)}
+          >
+            {countries.map(country => (
+              <option key={country.code} value={country.code}>
+                {country.code}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <LanguageSwitcher />
 

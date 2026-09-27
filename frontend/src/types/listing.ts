@@ -15,6 +15,7 @@ export type Listing = {
   seller_id: string;
   category_id: string;
   administrative_area_id: string | null;
+  country_code: string;
 
   title: string;
 

@@ -40,6 +40,14 @@ class Listing(UUIDMixin, TimestampMixin, Base):
         index=True,
     )
 
+    country_code: Mapped[str] = mapped_column(
+        String(2),
+        nullable=False,
+        default="BI",
+        server_default="BI",
+        index=True,
+    )
+
     title: Mapped[str] = mapped_column(
         String(200),
         nullable=False,

@@ -81,6 +81,7 @@ class VerificationService:
         await SmsService.send_sms(
             user.phone,
             f"Votre code de vérification est {code}. Il expire dans 10 minutes.",
+            country_code=user.country_code,
         )
 
         await db.commit()

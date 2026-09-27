@@ -57,6 +57,7 @@ class AdminUserResponse(BaseModel):
     id: UUID
     phone: str
     email: str | None
+    country_code: str
     account_type: str
     status: str
     phone_verified: bool
@@ -82,6 +83,7 @@ class AdminListingResponse(BaseModel):
     seller_id: UUID
     category_id: UUID
     administrative_area_id: UUID | None
+    country_code: str
     title: str
     description: str | None
     price: Decimal | None
@@ -179,8 +181,41 @@ class AdminCategoryAttributeUpdate(BaseModel):
     sort_order: int | None = None
 
 
+class AdminCountryCreate(BaseModel):
+    code: str
+    name: str
+    currency: str = "BIF"
+    phone_prefix: str | None = None
+    default_language: str = "fr"
+    active: bool = True
+    sort_order: int = 0
+
+
+class AdminCountryUpdate(BaseModel):
+    name: str | None = None
+    currency: str | None = None
+    phone_prefix: str | None = None
+    default_language: str | None = None
+    active: bool | None = None
+    sort_order: int | None = None
+
+
+class AdminCountryResponse(BaseModel):
+    id: UUID
+    code: str
+    name: str
+    currency: str
+    phone_prefix: str | None
+    default_language: str
+    active: bool
+    sort_order: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AdminAdministrativeAreaCreate(BaseModel):
     name: str
+    country_code: str = "BI"
     area_type: str
     parent_id: UUID | None = None
     code: str | None = None
@@ -191,6 +226,7 @@ class AdminAdministrativeAreaCreate(BaseModel):
 
 class AdminAdministrativeAreaUpdate(BaseModel):
     name: str | None = None
+    country_code: str | None = None
     area_type: str | None = None
     parent_id: UUID | None = None
     code: str | None = None
@@ -240,7 +276,9 @@ class AdminReviewListResponse(BaseModel):
 
 class AdminListingPackageCreate(BaseModel):
     code: str
+    country_code: str = "BI"
     name: str
+    country_code: str
     duration_days: int
     price: Decimal
     currency: str = "BIF"
@@ -250,6 +288,7 @@ class AdminListingPackageCreate(BaseModel):
 
 class AdminListingPackageUpdate(BaseModel):
     code: str | None = None
+    country_code: str | None = None
     name: str | None = None
     duration_days: int | None = None
     price: Decimal | None = None
@@ -262,6 +301,7 @@ class AdminListingPackageResponse(BaseModel):
     id: UUID
     code: str
     name: str
+    country_code: str
     duration_days: int
     price: Decimal
     currency: str
@@ -297,6 +337,7 @@ class AdminNotificationCreate(BaseModel):
     message: str
     recipient: str = "ALL"
     user_id: UUID | None = None
+    country_code: str | None = None
 
 
 class AdminAuditLogResponse(BaseModel):

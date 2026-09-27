@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -30,9 +30,10 @@ router = APIRouter(
     response_model=list[ListingPackageResponse],
 )
 async def get_listing_packages(
+    country_code: str | None = Query(default=None, min_length=2, max_length=2),
     db: AsyncSession = Depends(get_db),
 ):
-    return await PublicationRepository.get_packages(db)
+    return await PublicationRepository.get_packages(db, country_code=country_code)
 
 
 @router.post(

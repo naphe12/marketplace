@@ -176,6 +176,7 @@ class OfferService:
             seller_id=offer.seller_id,
             agreed_price=offer.amount,
             currency=offer.currency,
+            country_code=listing.country_code,
             status="ACCEPTED",
         )
 

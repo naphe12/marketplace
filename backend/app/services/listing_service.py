@@ -13,6 +13,7 @@ from app.models.listing import (
 )
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.listing_repository import ListingRepository
+from app.repositories.location_repository import LocationRepository
 from app.schemas.listing import (
     ListingAttributeValueCreate,
     ListingCreate,
@@ -28,6 +29,35 @@ from app.repositories.settings_repository import SettingsRepository
 
 
 class ListingService:
+
+    @staticmethod
+    async def _resolve_country_code(
+        db: AsyncSession,
+        administrative_area_id: UUID | None,
+        provided_country_code: str | None,
+    ) -> str:
+        if administrative_area_id is None:
+            return (provided_country_code or "BI").upper()
+
+        area = await LocationRepository.get_by_id(
+            db,
+            administrative_area_id,
+        )
+
+        if not area:
+            raise HTTPException(
+                status_code=404,
+                detail="Localisation introuvable.",
+            )
+
+        if provided_country_code and area.country_code != provided_country_code.upper():
+            raise HTTPException(
+                status_code=400,
+                detail="La localisation ne correspond pas au pays choisi.",
+            )
+
+        return area.country_code
+
 
     @staticmethod
     async def create(
@@ -53,10 +83,17 @@ class ListingService:
                 detail="Cette catégorie n'est pas active.",
             )
 
+        country_code = await ListingService._resolve_country_code(
+            db,
+            data.administrative_area_id,
+            data.country_code,
+        )
+
         listing = Listing(
             seller_id=seller_id,
             category_id=data.category_id,
             administrative_area_id=data.administrative_area_id,
+            country_code=country_code,
             title=data.title,
             description=data.description,
             price=data.price,
@@ -155,6 +192,13 @@ class ListingService:
                     status_code=404,
                     detail="Catégorie introuvable.",
                 )
+
+        if "administrative_area_id" in values or "country_code" in values:
+            values["country_code"] = await ListingService._resolve_country_code(
+                db,
+                values.get("administrative_area_id", listing.administrative_area_id),
+                values.get("country_code", listing.country_code),
+            )
 
         if values.get("currency"):
             values["currency"] = values["currency"].upper()

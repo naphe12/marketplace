@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,9 +25,11 @@ class Settings(BaseSettings):
     PAYMENT_PROVIDER_BASE_URL: str | None = None
     PAYMENT_PROVIDER_API_KEY: str | None = None
     PAYMENT_PROVIDER_WEBHOOK_SECRET: str | None = None
+    PAYMENT_PROVIDER_BY_COUNTRY: str | None = None
 
     SMS_PROVIDER_BASE_URL: str | None = None
     SMS_PROVIDER_API_KEY: str | None = None
+    SMS_PROVIDER_BY_COUNTRY: str | None = None
     SMS_SENDER_NAME: str = "Marketplace"
     PASSWORD_RESET_TOKEN_MINUTES: int = 15
 

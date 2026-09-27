@@ -18,6 +18,7 @@ import {
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../i18n/I18nProvider";
+import { useCountry } from "../market/CountryContext";
 
 import CategoryScroller from "../components/home/CategoryScroller";
 import ListingCard from "../components/listings/ListingCard";
@@ -37,6 +38,7 @@ export default function HomePage() {
   const { user } = useAuth();
 
   const { t } = useI18n();
+  const { countryCode } = useCountry();
 
   const [query, setQuery] =
     useState("");
@@ -66,7 +68,7 @@ export default function HomePage() {
           ),
 
           apiRequest<ListingSearchResponse>(
-            "/listings?limit=12&sort=newest",
+            `/listings?limit=12&sort=newest&country_code=${countryCode}`,
           ),
         ] as const;
 
@@ -133,7 +135,7 @@ export default function HomePage() {
 
 
     loadHome();
-  }, [user]);
+  }, [user, countryCode]);
 
 
   function submitSearch(
@@ -145,12 +147,12 @@ export default function HomePage() {
       query.trim();
 
     if (!cleaned) {
-      navigate("/search");
+      navigate(`/search?country_code=${countryCode}`);
       return;
     }
 
     navigate(
-      `/search?q=${encodeURIComponent(
+      `/search?country_code=${countryCode}&q=${encodeURIComponent(
         cleaned,
       )}`,
     );

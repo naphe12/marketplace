@@ -49,6 +49,14 @@ class ListingPackage(
         nullable=False,
     )
 
+    country_code: Mapped[str] = mapped_column(
+        String(2),
+        default="BI",
+        server_default="BI",
+        nullable=False,
+        index=True,
+    )
+
     active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

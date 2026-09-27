@@ -113,6 +113,7 @@ class ListingRepository:
         q: str | None = None,
         category_id: UUID | None = None,
         administrative_area_id: UUID | None = None,
+        country_code: str | None = None,
         seller_id: UUID | None = None,
 
         price_min: Decimal | None = None,
@@ -167,6 +168,11 @@ class ListingRepository:
             filters.append(
                 Listing.administrative_area_id
                 == administrative_area_id
+            )
+
+        if country_code:
+            filters.append(
+                Listing.country_code == country_code.upper()
             )
 
         # ---------------------------------

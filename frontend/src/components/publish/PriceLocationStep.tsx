@@ -5,6 +5,7 @@ import LocationSelector from "./LocationSelector";
 type Props = {
   price: string;
   currency: string;
+  marketCurrency: string;
   priceType: string;
   allowOffers: boolean;
   provinceId: string;
@@ -30,7 +31,7 @@ type Props = {
 };
 
 export default function PriceLocationStep({
-  price, currency, priceType, allowOffers,
+  price, currency, marketCurrency, priceType, allowOffers,
   provinceId, communeId, zoneId, localityId,
   latitude, longitude,
   onPriceChange, onCurrencyChange,
@@ -64,9 +65,7 @@ export default function PriceLocationStep({
         <label className="form-field">
           <span>{t("publish.currency")}</span>
           <select value={currency} onChange={event => onCurrencyChange(event.target.value)}>
-            <option value="BIF">BIF</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
+            <option value={marketCurrency}>{marketCurrency}</option>
           </select>
         </label>
       </div>

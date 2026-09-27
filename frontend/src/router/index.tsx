@@ -31,6 +31,7 @@ import { useAuth } from "../auth/AuthContext";
 import AppShell from "../components/layout/AppShell";
 
 import ConversationPage from "../pages/ConversationPage";
+import CountryHomePage from "../pages/CountryHomePage";
 import FavoritesPage from "../pages/FavoritesPage";
 import HomePage from "../pages/HomePage";
 import ListingCheckoutPage from "../pages/ListingCheckoutPage";
@@ -187,6 +188,10 @@ export const router =
         {
           path: "/",
           element: <HomePage />,
+        },
+        {
+          path: "/:countryCode",
+          element: <CountryHomePage />,
         },
         {
           path: "/search",

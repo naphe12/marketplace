@@ -6,18 +6,49 @@ from fastapi import HTTPException
 from app.core.config import settings
 
 
+def _load_country_config(raw: str | None, country_code: str | None) -> dict:
+    if not raw or not country_code:
+        return {}
+
+    data = json.loads(raw)
+    country_data = data.get(country_code.upper(), {})
+    return country_data if isinstance(country_data, dict) else {}
+
+
 class SmsService:
     @staticmethod
-    async def send_password_reset(phone: str, code: str) -> None:
-        message = (
-            f"{settings.SMS_SENDER_NAME}: votre code de réinitialisation est "
-            f"{code}. Il expire dans {settings.PASSWORD_RESET_TOKEN_MINUTES} minutes."
+    def get_config(country_code: str | None = None) -> dict:
+        country_config = _load_country_config(
+            settings.SMS_PROVIDER_BY_COUNTRY,
+            country_code,
         )
-        await SmsService.send_sms(phone, message)
+        return {
+            "base_url": country_config.get("base_url") or settings.SMS_PROVIDER_BASE_URL,
+            "api_key": country_config.get("api_key") or settings.SMS_PROVIDER_API_KEY,
+            "sender": country_config.get("sender") or settings.SMS_SENDER_NAME,
+        }
 
     @staticmethod
-    async def send_sms(phone: str, message: str) -> None:
-        if not settings.SMS_PROVIDER_BASE_URL or not settings.SMS_PROVIDER_API_KEY:
+    async def send_password_reset(
+        phone: str,
+        code: str,
+        country_code: str | None = None,
+    ) -> None:
+        sender = SmsService.get_config(country_code)["sender"]
+        message = (
+            f"{sender}: votre code de réinitialisation est "
+            f"{code}. Il expire dans {settings.PASSWORD_RESET_TOKEN_MINUTES} minutes."
+        )
+        await SmsService.send_sms(phone, message, country_code=country_code)
+
+    @staticmethod
+    async def send_sms(
+        phone: str,
+        message: str,
+        country_code: str | None = None,
+    ) -> None:
+        config = SmsService.get_config(country_code)
+        if not config["base_url"] or not config["api_key"]:
             raise HTTPException(
                 status_code=503,
                 detail="Provider SMS non configuré.",
@@ -26,16 +57,16 @@ class SmsService:
         body = json.dumps(
             {
                 "to": phone,
-                "sender": settings.SMS_SENDER_NAME,
+                "sender": config["sender"],
                 "message": message,
             }
         ).encode("utf-8")
 
         req = request.Request(
-            f"{settings.SMS_PROVIDER_BASE_URL.rstrip('/')}/messages",
+            f"{config['base_url'].rstrip('/')}/messages",
             data=body,
             headers={
-                "Authorization": f"Bearer {settings.SMS_PROVIDER_API_KEY}",
+                "Authorization": f"Bearer {config['api_key']}",
                 "Content-Type": "application/json",
             },
             method="POST",

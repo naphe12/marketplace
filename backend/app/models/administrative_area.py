@@ -28,6 +28,13 @@ class AdministrativeArea(UUIDMixin, Base):
         nullable=True,
     )
 
+    country_code: Mapped[str] = mapped_column(
+        String(2),
+        nullable=False,
+        default="BI",
+        server_default="BI",
+    )
+
     name: Mapped[str] = mapped_column(
         String,
         nullable=False,

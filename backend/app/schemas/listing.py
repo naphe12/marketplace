@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ListingCreate(BaseModel):
     category_id: UUID
     administrative_area_id: UUID | None = None
+    country_code: str = Field(default="BI", min_length=2, max_length=2)
 
     title: str = Field(
         min_length=0,
@@ -44,6 +45,7 @@ class ListingCreate(BaseModel):
 class ListingUpdate(BaseModel):
     category_id: UUID | None = None
     administrative_area_id: UUID | None = None
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
 
     title: str | None = Field(
         default=None,
@@ -130,6 +132,7 @@ class ListingResponse(BaseModel):
     seller_id: UUID
     category_id: UUID
     administrative_area_id: UUID | None
+    country_code: str
 
     title: str
     description: str | None
@@ -173,6 +176,7 @@ class ListingCardResponse(BaseModel):
     seller_id: UUID
     category_id: UUID
     administrative_area_id: UUID | None
+    country_code: str
 
     title: str
 

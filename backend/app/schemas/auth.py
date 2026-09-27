@@ -26,6 +26,12 @@ class RegisterRequest(BaseModel):
         max_length=100,
     )
 
+    country_code: str = Field(
+        default="BI",
+        min_length=2,
+        max_length=2,
+    )
+
 
 class LoginRequest(BaseModel):
     phone: str
@@ -62,6 +68,7 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     email: EmailStr | None = None
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
     first_name: str | None = Field(default=None, max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     display_name: str | None = Field(default=None, max_length=150)
@@ -74,6 +81,7 @@ class UserResponse(BaseModel):
     id: UUID
     phone: str
     email: str | None
+    country_code: str
     account_type: str
     status: str
     is_admin: bool

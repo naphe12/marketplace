@@ -25,6 +25,14 @@ class User(UUIDMixin, TimestampMixin, Base):
         nullable=True,
     )
 
+    country_code: Mapped[str] = mapped_column(
+        String(2),
+        default="BI",
+        server_default="BI",
+        nullable=False,
+        index=True,
+    )
+
     password_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

@@ -29,6 +29,7 @@ import {
 import {
   useI18n,
 } from "../i18n/I18nProvider";
+import { useCountry } from "../market/CountryContext";
 
 import ListingCard from "../components/listings/ListingCard";
 import SearchResultsMap from "../components/location/SearchResultsMap";
@@ -88,6 +89,7 @@ function compactParams(
 export default function SearchPage() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { countries, countryCode: activeCountryCode, setCountryCode } = useCountry();
   const [params, setParams] = useSearchParams();
 
   const query = getParam(params, "q");
@@ -101,6 +103,7 @@ export default function SearchPage() {
     ? requestedOffset
     : 0;
 
+  const countryCode = getParam(params, "country_code") || activeCountryCode;
   const categoryId = getParam(params, "category_id");
   const administrativeAreaId = getParam(params, "administrative_area_id");
   const priceMin = getParam(params, "price_min");
@@ -114,6 +117,7 @@ export default function SearchPage() {
 
   const [draft, setDraft] = useState({
     q: query,
+    country_code: countryCode,
     category_id: categoryId,
     administrative_area_id: administrativeAreaId,
     price_min: priceMin,
@@ -167,6 +171,7 @@ export default function SearchPage() {
   useEffect(() => {
     setDraft({
       q: query,
+      country_code: countryCode,
       category_id: categoryId,
       administrative_area_id: administrativeAreaId,
       price_min: priceMin,
@@ -181,6 +186,7 @@ export default function SearchPage() {
     });
   }, [
     query,
+    countryCode,
     categoryId,
     administrativeAreaId,
     priceMin,
@@ -195,6 +201,8 @@ export default function SearchPage() {
   ]);
 
 
+  const selectedDraftCountryCode = draft.country_code || countryCode;
+
   useEffect(() => {
     let mounted = true;
 
@@ -202,7 +210,7 @@ export default function SearchPage() {
 
     Promise.all([
       apiRequest<Category[]>("/categories"),
-      apiRequest<AdministrativeArea[]>("/administrative-areas"),
+      apiRequest<AdministrativeArea[]>(`/administrative-areas?country_code=${selectedDraftCountryCode}`),
     ])
       .then(([loadedCategories, loadedAreas]) => {
         if (!mounted) {
@@ -226,7 +234,7 @@ export default function SearchPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [countryCode, selectedDraftCountryCode]);
 
 
   useEffect(() => {
@@ -301,6 +309,7 @@ export default function SearchPage() {
     return () => controller.abort();
   }, [
     query,
+    countryCode,
     categoryId,
     administrativeAreaId,
     priceMin,
@@ -351,6 +360,7 @@ export default function SearchPage() {
 
   const activeSearchParams = compactParams({
     q: query,
+    country_code: countryCode,
     category_id: categoryId,
     administrative_area_id: administrativeAreaId,
     price_min: priceMin,
@@ -489,6 +499,28 @@ export default function SearchPage() {
 
         <div className="search-filter-grid">
           <label className="form-field">
+            <span>Pays</span>
+            <select
+              value={draft.country_code}
+              disabled={filtersLoading}
+              onChange={event => {
+                setCountryCode(event.target.value);
+                setDraft(current => ({
+                  ...current,
+                  country_code: event.target.value,
+                  administrative_area_id: "",
+                }));
+              }}
+            >
+              {countries.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="form-field">
             <span>{t("search.category")}</span>
             <select
               value={draft.category_id}
@@ -517,7 +549,7 @@ export default function SearchPage() {
                 administrative_area_id: event.target.value,
               }))}
             >
-              <option value="">{t("search.allBurundi")}</option>
+              <option value="">Toutes les zones</option>
               {locationOptions.map(area => (
                 <option key={area.id} value={area.id}>
                   {area.label}

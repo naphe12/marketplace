@@ -26,6 +26,7 @@ import {
 import {
   useI18n,
 } from "../i18n/I18nProvider";
+import { useCountry } from "../market/CountryContext";
 
 
 type AuthMode = "login" | "register" | "reset";
@@ -41,6 +42,7 @@ export default function LoginPage() {
   } = useAuth();
 
   const { t } = useI18n();
+  const { countryCode } = useCountry();
 
   const [mode, setMode] =
     useState<AuthMode>("login");
@@ -140,6 +142,7 @@ export default function LoginPage() {
           phone,
           email: email.trim() || null,
           password,
+          country_code: countryCode,
           first_name: firstName.trim() || null,
           last_name: lastName.trim() || null,
         });

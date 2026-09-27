@@ -263,7 +263,8 @@ async def create_delivery(
         dropoff_address=data.dropoff_address.strip(),
         carrier_name=data.carrier_name.strip() if data.carrier_name else None,
         fee_amount=data.fee_amount,
-        currency=data.currency.upper(),
+        currency=transaction.currency,
+        country_code=transaction.country_code,
         status="REQUESTED",
     )
     db.add(delivery)

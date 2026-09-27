@@ -19,6 +19,7 @@ import {
 type ListingPackage = {
   id: string;
   name: string;
+  country_code: string;
   duration_days: number;
   price: string;
   currency: string;
@@ -28,6 +29,7 @@ type SellerListing = {
   id: string;
   status: string;
   title: string;
+  country_code: string;
 };
 
 
@@ -45,21 +47,26 @@ export default function ListingPackagesPage() {
   useEffect(() => {
     let mounted = true;
 
-    Promise.all([
-      apiRequest<ListingPackage[]>("/listing-packages"),
-      listingId
-        ? apiRequest<SellerListing>(
+    async function load() {
+      const loadedListing = listingId
+        ? await apiRequest<SellerListing>(
             `/listings/mine/${listingId}`,
             { authenticated: true },
           )
-        : Promise.resolve(null),
-    ])
-      .then(([items, loadedListing]) => {
-        if (mounted) {
-          setPackages(items);
-          setListing(loadedListing);
-        }
-      })
+        : null;
+      const items = await apiRequest<ListingPackage[]>(
+        loadedListing?.country_code
+          ? `/listing-packages?country_code=${loadedListing.country_code}`
+          : "/listing-packages",
+      );
+
+      if (mounted) {
+        setPackages(items);
+        setListing(loadedListing);
+      }
+    }
+
+    load()
       .catch(cause => {
         if (mounted) {
           setError(

@@ -5,22 +5,25 @@ import {
 import BottomNav from "./BottomNav";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import { CountryProvider } from "../../market/CountryContext";
 
 
 export default function AppShell() {
   return (
-    <div className="app-layout">
-      <Sidebar />
+    <CountryProvider>
+      <div className="app-layout">
+        <Sidebar />
 
-      <div className="app-main">
-        <Header />
+        <div className="app-main">
+          <Header />
 
-        <main className="page-container">
-          <Outlet />
-        </main>
+          <main className="page-container">
+            <Outlet />
+          </main>
+        </div>
+
+        <BottomNav />
       </div>
-
-      <BottomNav />
-    </div>
+    </CountryProvider>
   );
 }

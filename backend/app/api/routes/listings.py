@@ -374,6 +374,12 @@ async def search_listings(
 
     administrative_area_id: UUID | None = None,
 
+    country_code: str | None = Query(
+        default=None,
+        min_length=2,
+        max_length=2,
+    ),
+
     seller_id: UUID | None = None,
 
     price_min: Decimal | None = Query(
@@ -442,6 +448,7 @@ async def search_listings(
             administrative_area_id=(
                 administrative_area_id
             ),
+            country_code=country_code,
 
             seller_id=seller_id,
 

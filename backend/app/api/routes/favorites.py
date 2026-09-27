@@ -55,6 +55,7 @@ async def my_detailed_favorites(
     rows = await FavoriteRepository.get_detailed_for_user(
         db,
         current_user.id,
+        country_code=current_user.country_code,
     )
 
     return [

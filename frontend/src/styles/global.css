@@ -9569,3 +9569,95 @@ iframe {
     border-radius: 12px;
   }
 }
+
+
+.admin-country-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.admin-country-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.admin-country-card:hover,
+.admin-country-card--active {
+  border-color: #0f766e;
+  box-shadow: 0 10px 24px rgb(15 118 110 / 12%);
+  transform: translateY(-1px);
+}
+
+.admin-country-card strong {
+  font-size: 15px;
+}
+
+.admin-country-card span,
+.admin-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-country-card label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.country-switcher select {
+  height: 38px;
+  min-width: 72px;
+  padding: 0 28px 0 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.country-switcher select:focus {
+  border-color: #0f766e;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(15 118 110 / 12%);
+}
+
+@media (max-width: 760px) {
+  .country-switcher select {
+    min-width: 62px;
+    height: 34px;
+    font-size: 12px;
+  }
+}
+
+
+.admin-location-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-location-actions label {
+  cursor: pointer;
+}

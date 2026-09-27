@@ -16,11 +16,30 @@ from app.repositories.listing_repository import (
 from app.repositories.publication_repository import (
     PublicationRepository,
 )
+from app.repositories.user_repository import (
+    UserRepository,
+)
 from app.services.notification_service import NotificationService
 from app.services.payment_provider import PaymentProvider
 
 
 class BillingService:
+
+    @staticmethod
+    async def _resolve_order_country_code(
+        db: AsyncSession,
+        order,
+    ) -> str:
+        if order.listing_id:
+            listing = await ListingRepository.get_by_id(
+                db,
+                order.listing_id,
+            )
+            if listing and getattr(listing, "country_code", None):
+                return listing.country_code
+
+        user = await UserRepository.get_by_id(db, order.user_id)
+        return getattr(user, "country_code", "BI") or "BI"
 
     @staticmethod
     async def create_payment(
@@ -87,7 +106,12 @@ class BillingService:
         db.add(payment)
         await db.flush()
 
-        if settings.PAYMENT_PROVIDER_BASE_URL and settings.PAYMENT_PROVIDER_API_KEY:
+        country_code = await BillingService._resolve_order_country_code(
+            db,
+            order,
+        )
+        provider_config = PaymentProvider.get_config(country_code)
+        if provider_config["base_url"] and provider_config["api_key"]:
             provider_response = await PaymentProvider.initialize_payment(
                 payment_id=str(payment.external_reference),
                 amount=payment.amount,
@@ -97,7 +121,9 @@ class BillingService:
                     f"{settings.PUBLIC_API_URL.rstrip('/')}"
                     "/api/v1/billing/webhooks/provider"
                 ),
+                country_code=country_code,
             )
+            payment.provider = payment.provider or provider_config.get("provider")
             payment.provider_response = provider_response
             payment.provider_transaction_id = provider_response.get("transaction_id")
         elif not settings.SIMULATED_PAYMENTS_ENABLED:

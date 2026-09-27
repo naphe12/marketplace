@@ -4,7 +4,7 @@ from io import StringIO
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy import String, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.models.audit import AuditLog
 from app.models.billing import BillingPayment
 from app.models.billing import BillingOrder
+from app.models.country import Country
 from app.models.administrative_area import AdministrativeArea
 from app.models.category import Category, CategoryAttribute
 from app.models.listing import Listing, ListingAttributeValue
@@ -35,6 +36,9 @@ from app.schemas.admin import (
     AdminCategoryCreate,
     AdminCategoryDetailResponse,
     AdminCategoryUpdate,
+    AdminCountryUpdate,
+    AdminCountryResponse,
+    AdminCountryCreate,
     AdminDashboardResponse,
     AdminFraudSignalActionRequest,
     AdminFraudSignalListResponse,
@@ -135,6 +139,7 @@ async def write_audit(
     response_model=AdminDashboardResponse,
 )
 async def dashboard(
+    country_code: str | None = Query(default=None, min_length=2, max_length=2),
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
@@ -143,31 +148,65 @@ async def dashboard(
         time.min,
         tzinfo=timezone.utc,
     )
+    normalized_country = country_code.upper() if country_code else None
+    dashboard_currency = "BIF"
 
-    paid_today = await db.execute(
+    if normalized_country:
+        country = await db.scalar(
+            select(Country).where(Country.code == normalized_country)
+        )
+        if country:
+            dashboard_currency = country.currency
+
+    user_filters = [User.deleted_at.is_(None)]
+    listing_filters = [Listing.deleted_at.is_(None)]
+    transaction_query = select(func.count(Transaction.id))
+    billing_query = (
         select(func.coalesce(func.sum(BillingPayment.amount), 0))
+        .join(User, User.id == BillingPayment.user_id)
         .where(BillingPayment.status == "PAID")
         .where(BillingPayment.paid_at >= today_start)
     )
 
+    if normalized_country:
+        user_filters.append(User.country_code == normalized_country)
+        listing_filters.append(Listing.country_code == normalized_country)
+        transaction_query = transaction_query.join(
+            Listing,
+            Listing.id == Transaction.listing_id,
+        ).where(Listing.country_code == normalized_country)
+        billing_query = billing_query.where(User.country_code == normalized_country)
+
+    paid_today = await db.execute(billing_query)
+
+    def user_count(*extra):
+        return select(func.count(User.id)).where(*user_filters, *extra)
+
+    def listing_count(*extra):
+        return select(func.count(Listing.id)).where(*listing_filters, *extra)
+
+    async def transaction_count(*extra):
+        query = transaction_query.where(*extra)
+        return await count(db, query)
+
     return {
         "users": {
-            "total": await count(db, select(func.count(User.id)).where(User.deleted_at.is_(None))),
-            "new_today": await count(db, select(func.count(User.id)).where(User.created_at >= today_start)),
-            "verified": await count(db, select(func.count(User.id)).where(User.phone_verified.is_(True))),
-            "suspended": await count(db, select(func.count(User.id)).where(User.status == "SUSPENDED")),
+            "total": await count(db, user_count()),
+            "new_today": await count(db, user_count(User.created_at >= today_start)),
+            "verified": await count(db, user_count(User.phone_verified.is_(True))),
+            "suspended": await count(db, user_count(User.status == "SUSPENDED")),
         },
         "listings": {
-            "total": await count(db, select(func.count(Listing.id)).where(Listing.deleted_at.is_(None))),
-            "active": await count(db, select(func.count(Listing.id)).where(Listing.status == "ACTIVE")),
-            "draft": await count(db, select(func.count(Listing.id)).where(Listing.status == "DRAFT")),
-            "pending_payment": await count(db, select(func.count(Listing.id)).where(Listing.status == "PENDING_PAYMENT")),
-            "suspended": await count(db, select(func.count(Listing.id)).where(Listing.status == "SUSPENDED")),
+            "total": await count(db, listing_count()),
+            "active": await count(db, listing_count(Listing.status == "ACTIVE")),
+            "draft": await count(db, listing_count(Listing.status == "DRAFT")),
+            "pending_payment": await count(db, listing_count(Listing.status == "PENDING_PAYMENT")),
+            "suspended": await count(db, listing_count(Listing.status == "SUSPENDED")),
         },
         "transactions": {
-            "total": await count(db, select(func.count(Transaction.id))),
-            "completed": await count(db, select(func.count(Transaction.id)).where(Transaction.status == "COMPLETED")),
-            "cancelled": await count(db, select(func.count(Transaction.id)).where(Transaction.status == "CANCELLED")),
+            "total": await transaction_count(),
+            "completed": await transaction_count(Transaction.status == "COMPLETED"),
+            "cancelled": await transaction_count(Transaction.status == "CANCELLED"),
         },
         "moderation": {
             "reports_pending": await count(db, select(func.count(Report.id)).where(Report.status == "PENDING")),
@@ -176,7 +215,7 @@ async def dashboard(
         },
         "billing": {
             "paid_today": paid_today.scalar_one() or 0,
-            "currency": "BIF",
+            "currency": dashboard_currency,
         },
     }
 
@@ -209,11 +248,15 @@ async def admin_update_settings(
 
 @router.get("/listing-packages", response_model=list[AdminListingPackageResponse])
 async def admin_listing_packages(
+    country_code: str | None = Query(default=None, min_length=2, max_length=2),
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
+    query = select(ListingPackage)
+    if country_code:
+        query = query.where(ListingPackage.country_code == country_code.upper())
     result = await db.execute(
-        select(ListingPackage).order_by(ListingPackage.sort_order, ListingPackage.duration_days)
+        query.order_by(ListingPackage.country_code, ListingPackage.sort_order, ListingPackage.duration_days)
     )
     return list(result.scalars().all())
 
@@ -224,12 +267,18 @@ async def admin_create_listing_package(
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
+    country_code = data.country_code.upper()
+    country = await db.scalar(select(Country).where(Country.code == country_code))
+    if not country:
+        raise HTTPException(404, "Pays introuvable.")
+
     package = ListingPackage(
         code=data.code,
+        country_code=country_code,
         name=data.name,
         duration_days=data.duration_days,
         price=data.price,
-        currency=data.currency.upper(),
+        currency=(data.currency or country.currency).upper(),
         active=data.active,
         sort_order=data.sort_order,
     )
@@ -260,6 +309,13 @@ async def admin_update_listing_package(
         raise HTTPException(404, "Package introuvable.")
     previous = {"price": str(package.price), "active": package.active}
     values = data.model_dump(exclude_unset=True)
+    if "country_code" in values and values["country_code"]:
+        values["country_code"] = values["country_code"].upper()
+        country = await db.scalar(select(Country).where(Country.code == values["country_code"]))
+        if not country:
+            raise HTTPException(404, "Pays introuvable.")
+        if "currency" not in values or not values["currency"]:
+            values["currency"] = country.currency
     if "currency" in values and values["currency"]:
         values["currency"] = values["currency"].upper()
     apply_values(package, values)
@@ -274,6 +330,79 @@ async def admin_update_listing_package(
     await db.commit()
     await db.refresh(package)
     return package
+
+
+
+
+@router.get("/countries", response_model=list[AdminCountryResponse])
+async def admin_countries(
+    db: AsyncSession = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    result = await db.execute(
+        select(Country).order_by(Country.sort_order.asc(), Country.name.asc())
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/countries", response_model=AdminCountryResponse, status_code=201)
+async def admin_create_country(
+    data: AdminCountryCreate,
+    db: AsyncSession = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    country = Country(
+        code=data.code.upper(),
+        name=data.name,
+        currency=(data.currency or country.currency).upper(),
+        phone_prefix=data.phone_prefix,
+        default_language=data.default_language.lower(),
+        active=data.active,
+        sort_order=data.sort_order,
+    )
+    db.add(country)
+    await db.flush()
+    await write_audit(
+        db,
+        actor_user_id=admin.id,
+        action="COUNTRY_CREATED",
+        target_type="COUNTRY",
+        target_id=country.id,
+        metadata={"code": country.code, "active": country.active},
+    )
+    await db.commit()
+    await db.refresh(country)
+    return country
+
+
+@router.patch("/countries/{country_id}", response_model=AdminCountryResponse)
+async def admin_update_country(
+    country_id: UUID,
+    data: AdminCountryUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    country = await db.get(Country, country_id)
+    if not country:
+        raise HTTPException(404, "Pays introuvable.")
+    values = data.model_dump(exclude_unset=True)
+    if "currency" in values and values["currency"]:
+        values["currency"] = values["currency"].upper()
+    if "default_language" in values and values["default_language"]:
+        values["default_language"] = values["default_language"].lower()
+    previous = {"active": country.active, "currency": country.currency}
+    apply_values(country, values)
+    await write_audit(
+        db,
+        actor_user_id=admin.id,
+        action="COUNTRY_UPDATED",
+        target_type="COUNTRY",
+        target_id=country.id,
+        metadata={"previous": previous, "changes": values},
+    )
+    await db.commit()
+    await db.refresh(country)
+    return country
 
 
 @router.get("/categories", response_model=list[AdminCategoryDetailResponse])
@@ -403,10 +532,123 @@ async def admin_delete_category_attribute(
     await db.commit()
 
 
+
+
+def parse_optional_decimal(value):
+    if value is None or str(value).strip() == "":
+        return None
+    return Decimal(str(value).strip())
+
+
+def parse_csv_bool(value, default=True) -> bool:
+    if value is None or str(value).strip() == "":
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "oui", "actif", "active"}
+
+
+@router.get("/administrative-areas/export")
+async def admin_export_administrative_areas(
+    country_code: str = Query(min_length=2, max_length=2),
+    db: AsyncSession = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    normalized_country = country_code.upper()
+    result = await db.execute(
+        select(AdministrativeArea)
+        .where(AdministrativeArea.country_code == normalized_country)
+        .order_by(AdministrativeArea.area_type, AdministrativeArea.name)
+    )
+    areas = list(result.scalars().all())
+    return csv_response(
+        f"administrative-areas-{normalized_country}.csv",
+        [
+            {
+                "id": str(area.id),
+                "country_code": area.country_code,
+                "name": area.name,
+                "area_type": area.area_type,
+                "parent_id": str(area.parent_id) if area.parent_id else "",
+                "code": area.code or "",
+                "latitude": str(area.latitude) if area.latitude is not None else "",
+                "longitude": str(area.longitude) if area.longitude is not None else "",
+                "active": area.active,
+            }
+            for area in areas
+        ],
+    )
+
+
+@router.post("/administrative-areas/import")
+async def admin_import_administrative_areas(
+    country_code: str = Query(min_length=2, max_length=2),
+    csv_content: str = Body(media_type="text/csv"),
+    db: AsyncSession = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    normalized_country = country_code.upper()
+    country = await db.scalar(select(Country).where(Country.code == normalized_country))
+    if not country:
+        raise HTTPException(404, "Pays introuvable.")
+
+    reader = csv.DictReader(StringIO(csv_content))
+    if not reader.fieldnames or "name" not in reader.fieldnames or "area_type" not in reader.fieldnames:
+        raise HTTPException(400, "CSV invalide: colonnes requises name, area_type.")
+
+    created = 0
+    updated = 0
+
+    for row in reader:
+        name = (row.get("name") or "").strip()
+        area_type = (row.get("area_type") or "").strip().upper()
+        if not name or not area_type:
+            continue
+
+        area = None
+        row_id = (row.get("id") or "").strip()
+        if row_id:
+            try:
+                area = await db.get(AdministrativeArea, UUID(row_id))
+            except ValueError:
+                area = None
+
+        if area and area.country_code != normalized_country:
+            raise HTTPException(400, f"La zone {area.id} appartient a un autre pays.")
+
+        parent_id = None
+        raw_parent_id = (row.get("parent_id") or "").strip()
+        if raw_parent_id:
+            try:
+                parent_id = UUID(raw_parent_id)
+            except ValueError as exc:
+                raise HTTPException(400, f"parent_id invalide pour {name}.") from exc
+
+        values = {
+            "name": name,
+            "country_code": normalized_country,
+            "area_type": area_type,
+            "parent_id": parent_id,
+            "code": (row.get("code") or "").strip() or None,
+            "latitude": parse_optional_decimal(row.get("latitude")),
+            "longitude": parse_optional_decimal(row.get("longitude")),
+            "active": parse_csv_bool(row.get("active"), default=True),
+        }
+
+        if area:
+            apply_values(area, values)
+            updated += 1
+        else:
+            db.add(AdministrativeArea(**values))
+            created += 1
+
+    await db.commit()
+    return {"created": created, "updated": updated}
+
+
 @router.get("/administrative-areas", response_model=list[AdminAdministrativeAreaResponse])
 async def admin_administrative_areas(
     parent_id: UUID | None = None,
     area_type: str | None = None,
+    country_code: str | None = None,
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
@@ -415,6 +657,8 @@ async def admin_administrative_areas(
         query = query.where(AdministrativeArea.parent_id == parent_id)
     if area_type:
         query = query.where(AdministrativeArea.area_type == area_type.upper())
+    if country_code:
+        query = query.where(AdministrativeArea.country_code == country_code.upper())
     result = await db.execute(query.order_by(AdministrativeArea.area_type, AdministrativeArea.name))
     return list(result.scalars().all())
 
@@ -427,6 +671,7 @@ async def admin_create_administrative_area(
 ):
     area = AdministrativeArea(
         name=data.name,
+        country_code=data.country_code.upper(),
         area_type=data.area_type.upper(),
         parent_id=data.parent_id,
         code=data.code,
@@ -797,12 +1042,21 @@ async def admin_send_notification(
     admin=Depends(get_current_admin),
 ):
     recipient = data.recipient.upper()
+    normalized_country = data.country_code.upper() if data.country_code else None
+
     if recipient == "USER":
         if data.user_id is None:
             raise HTTPException(422, "user_id requis pour un destinataire utilisateur.")
-        user_ids = [data.user_id]
+        query = select(User.id).where(User.id == data.user_id, User.deleted_at.is_(None))
+        if normalized_country:
+            query = query.where(User.country_code == normalized_country)
+        result = await db.execute(query)
+        user_ids = list(result.scalars().all())
     elif recipient in {"ALL", "GROUP"}:
-        result = await db.execute(select(User.id).where(User.deleted_at.is_(None)))
+        query = select(User.id).where(User.deleted_at.is_(None))
+        if normalized_country:
+            query = query.where(User.country_code == normalized_country)
+        result = await db.execute(query)
         user_ids = list(result.scalars().all())
     else:
         raise HTTPException(400, "Destinataire invalide.")
@@ -810,14 +1064,13 @@ async def admin_send_notification(
     for user_id in user_ids:
         db.add(
             Notification(
-        user_id=listing.seller_id,
-        notification_type="LISTING_STATUS_CHANGED",
-        title="Statut de votre annonce",
-        message=(
-            f"Votre annonce « {listing.title} » "
-            f"est maintenant {listing.status}."
-        ),
-    )
+                user_id=user_id,
+                notification_type="ADMIN_MESSAGE",
+                title=data.title,
+                message=data.message,
+                data={"country_code": normalized_country} if normalized_country else None,
+                status="CREATED",
+            )
         )
 
     await write_audit(
@@ -825,7 +1078,12 @@ async def admin_send_notification(
         actor_user_id=admin.id,
         action="ADMIN_NOTIFICATION_SENT",
         target_type="NOTIFICATION",
-        metadata={"recipient": recipient, "count": len(user_ids), "title": data.title},
+        metadata={
+            "recipient": recipient,
+            "country_code": normalized_country,
+            "count": len(user_ids),
+            "title": data.title,
+        },
     )
     await db.commit()
     return {"sent": len(user_ids)}
@@ -980,6 +1238,8 @@ async def admin_update_administrative_area(
     values = data.model_dump(exclude_unset=True)
     if "area_type" in values and values["area_type"]:
         values["area_type"] = values["area_type"].upper()
+    if "country_code" in values and values["country_code"]:
+        values["country_code"] = values["country_code"].upper()
     apply_values(area, values)
     await db.commit()
     await db.refresh(area)
@@ -1134,6 +1394,7 @@ async def list_listings(
     seller_id: UUID | None = None,
     category_id: UUID | None = None,
     administrative_area_id: UUID | None = None,
+    country_code: str | None = None,
     condition: str | None = None,
     price_type: str | None = None,
     allow_offers: bool | None = None,
@@ -1172,6 +1433,9 @@ async def list_listings(
 
     if administrative_area_id:
         filters.append(Listing.administrative_area_id == administrative_area_id)
+
+    if country_code:
+        filters.append(Listing.country_code == country_code.upper())
 
     if condition:
         filters.append(Listing.condition == condition.upper())

@@ -11,6 +11,7 @@ from app.repositories.favorite_repository import (
 from app.repositories.listing_repository import (
     ListingRepository,
 )
+from app.repositories.user_repository import UserRepository
 
 
 class FavoriteService:
@@ -40,6 +41,13 @@ class FavoriteService:
                     "Cette annonce n'est "
                     "pas disponible."
                 ),
+            )
+
+        user = await UserRepository.get_by_id(db, user_id)
+        if user and listing.country_code != user.country_code:
+            raise HTTPException(
+                status_code=400,
+                detail="Cette annonce appartient a un autre pays.",
             )
 
         existing = await FavoriteRepository.get(

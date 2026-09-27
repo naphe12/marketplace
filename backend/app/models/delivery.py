@@ -30,6 +30,7 @@ class Delivery(UUIDMixin, TimestampMixin, Base):
     dropoff_address: Mapped[str] = mapped_column(Text, nullable=False)
     fee_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="BIF")
+    country_code: Mapped[str] = mapped_column(String(2), nullable=False, default="BI", server_default="BI", index=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="REQUESTED", index=True)
     tracking_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
     proof_url: Mapped[str | None] = mapped_column(Text, nullable=True)

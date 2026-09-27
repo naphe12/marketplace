@@ -9,6 +9,7 @@ class ListingPackageResponse(BaseModel):
     id: UUID
     code: str
     name: str
+    country_code: str
 
     duration_days: int
 

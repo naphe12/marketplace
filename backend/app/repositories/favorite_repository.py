@@ -61,6 +61,7 @@ class FavoriteRepository:
         db: AsyncSession,
         user_id: UUID,
         folder_id: UUID | None = None,
+        country_code: str | None = None,
     ) -> list[Listing]:
 
         query = (
@@ -84,6 +85,9 @@ class FavoriteRepository:
         if folder_id is not None:
             query = query.where(Favorite.folder_id == folder_id)
 
+        if country_code:
+            query = query.where(Listing.country_code == country_code.upper())
+
         result = await db.execute(
             query.order_by(
                 Favorite.created_at.desc()
@@ -100,8 +104,9 @@ class FavoriteRepository:
     async def get_detailed_for_user(
         db: AsyncSession,
         user_id: UUID,
+        country_code: str | None = None,
     ):
-        result = await db.execute(
+        query = (
             select(Favorite, Listing)
             .join(Listing, Favorite.listing_id == Listing.id)
             .options(selectinload(Listing.images))
@@ -109,7 +114,14 @@ class FavoriteRepository:
                 Favorite.user_id == user_id,
                 Listing.deleted_at.is_(None),
             )
-            .order_by(Favorite.created_at.desc())
+        )
+
+        if country_code:
+            query = query.where(Listing.country_code == country_code.upper())
+
+        result = await db.execute(
+            query.order_by(Favorite.created_at.desc())
         )
 
         return list(result.all())
+

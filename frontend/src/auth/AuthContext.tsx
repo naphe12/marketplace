@@ -22,6 +22,7 @@ type User = {
   id: string;
   phone: string;
   email: string | null;
+  country_code: string;
   phone_verified: boolean;
   email_verified: boolean;
   identity_verification_status: string | null;
@@ -43,6 +44,7 @@ type AuthContextType = {
     phone: string;
     email: string | null;
     password: string;
+    country_code: string;
     first_name: string | null;
     last_name: string | null;
   }) => Promise<void>;
@@ -132,6 +134,7 @@ export function AuthProvider({
     phone: string;
     email: string | null;
     password: string;
+    country_code: string;
     first_name: string | null;
     last_name: string | null;
   }) {

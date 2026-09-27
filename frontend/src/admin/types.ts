@@ -116,6 +116,7 @@ export type AdminCategory = {
 
 export type AdminArea = {
   id: string;
+  country_code: string;
   parent_id: string | null;
   name: string;
   area_type: string;
@@ -252,6 +253,7 @@ export type AdminListingPackage = {
   id: string;
   code: string;
   name: string;
+  country_code: string;
   duration_days: number;
   price: string;
   currency: string;
@@ -292,4 +294,16 @@ export type AdminSearchResult = {
   label: string;
   detail: string | null;
   url: string;
+};
+
+
+export type AdminCountry = {
+  id: string;
+  code: string;
+  name: string;
+  currency: string;
+  phone_prefix: string | null;
+  default_language: string;
+  active: boolean;
+  sort_order: number;
 };

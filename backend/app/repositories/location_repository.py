@@ -14,6 +14,7 @@ class LocationRepository:
         *,
         parent_id: UUID | None = None,
         area_type: str | None = None,
+        country_code: str | None = None,
     ) -> list[AdministrativeArea]:
 
         query = (
@@ -33,6 +34,12 @@ class LocationRepository:
             query = query.where(
                 AdministrativeArea.area_type
                 == area_type.upper()
+            )
+
+        if country_code is not None:
+            query = query.where(
+                AdministrativeArea.country_code
+                == country_code.upper()
             )
 
         query = query.order_by(

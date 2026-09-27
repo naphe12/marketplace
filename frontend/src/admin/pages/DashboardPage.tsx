@@ -30,6 +30,7 @@ import StatusBadge from "../components/StatusBadge";
 import "../styles/admin-tables.css";
 
 import type {
+  AdminCountry,
   AdminDashboard,
 } from "../types";
 
@@ -44,6 +45,12 @@ type ActivityRow = {
 export default function DashboardPage() {
   const [dashboard, setDashboard] =
     useState<AdminDashboard | null>(null);
+
+  const [countries, setCountries] =
+    useState<AdminCountry[]>([]);
+
+  const [countryCode, setCountryCode] =
+    useState("");
 
   const [loading, setLoading] =
     useState(true);
@@ -60,9 +67,22 @@ export default function DashboardPage() {
       setError("");
 
       try {
+        if (countries.length === 0) {
+          const loadedCountries = await apiRequest<AdminCountry[]>(
+            "/admin/countries",
+            { authenticated: true },
+          );
+
+          if (mounted) {
+            setCountries(loadedCountries);
+          }
+        }
+
         const result =
           await apiRequest<AdminDashboard>(
-            "/admin/dashboard",
+            countryCode
+              ? `/admin/dashboard?country_code=${countryCode}`
+              : "/admin/dashboard",
             {
               authenticated: true,
             },
@@ -91,7 +111,7 @@ export default function DashboardPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [countryCode]);
 
 
   /*
@@ -202,6 +222,23 @@ export default function DashboardPage() {
           </p>
         </div>
 
+
+        <div className="admin-dashboard-filters">
+          <label className="form-field">
+            <span>Filtrer par pays</span>
+            <select
+              value={countryCode}
+              onChange={event => setCountryCode(event.target.value)}
+            >
+              <option value="">Tous les pays</option>
+              {countries.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         <div className="admin-dashboard-health">
           <Sparkles size={18} />

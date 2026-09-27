@@ -1,5 +1,6 @@
 from app.models.administrative_area import AdministrativeArea
 from app.models.base import Base
+from app.models.country import Country
 from app.models.user import User, UserProfile
 from app.models.category import Category, CategoryAttribute
 from app.models.settings import MarketplaceSettings
