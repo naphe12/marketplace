@@ -60,6 +60,7 @@ class AdminUserResponse(BaseModel):
     country_code: str
     account_type: str
     status: str
+    is_admin: bool
     phone_verified: bool
     email_verified: bool
     created_at: datetime

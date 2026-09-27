@@ -41,8 +41,10 @@ export type AdminUser = {
   id: string;
   phone: string;
   email: string | null;
+  country_code: string;
   account_type: string;
   status: string;
+  is_admin: boolean;
   phone_verified: boolean;
   email_verified: boolean;
   created_at: string;
