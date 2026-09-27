@@ -19,6 +19,10 @@ import {
 } from "./i18n/I18nProvider";
 
 import {
+  CountryProvider,
+} from "./market/CountryContext";
+
+import {
   router,
 } from "./router";
 
@@ -33,9 +37,11 @@ createRoot(
   <StrictMode>
     <I18nProvider>
       <AuthProvider>
-        <RouterProvider
-          router={router}
-        />
+        <CountryProvider>
+          <RouterProvider
+            router={router}
+          />
+        </CountryProvider>
       </AuthProvider>
     </I18nProvider>
   </StrictMode>,
