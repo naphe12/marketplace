@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n/I18nProvider";
 import LocationPicker from "../location/LocationPicker";
 import LocationSelector from "./LocationSelector";
 
@@ -38,6 +39,7 @@ export default function PriceLocationStep({
   onZoneChange, onLocalityChange,
   onLocationResolved, onMapLocationChange,
 }: Props) {
+  const { t } = useI18n();
   const hasLocation =
     latitude !== null && longitude !== null &&
     Number.isFinite(latitude) && Number.isFinite(longitude) &&
@@ -49,18 +51,18 @@ export default function PriceLocationStep({
   return (
     <section className="publish-panel">
       <div className="publish-panel__heading">
-        <h1>Prix et localisation</h1>
-        <p>Indiquez le prix et la zone approximative dans laquelle se trouve votre article.</p>
+        <h1>{t("publish.priceLocationTitle")}</h1>
+        <p>{t("publish.priceLocationText")}</p>
       </div>
 
       <div className="price-row">
         <label className="form-field">
-          <span>Prix</span>
+          <span>{t("publish.price")}</span>
           <input type="number" min="0" value={price}
             onChange={event => onPriceChange(event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Devise</span>
+          <span>{t("publish.currency")}</span>
           <select value={currency} onChange={event => onCurrencyChange(event.target.value)}>
             <option value="BIF">BIF</option>
             <option value="USD">USD</option>
@@ -70,14 +72,14 @@ export default function PriceLocationStep({
       </div>
 
       <div className="form-field">
-        <span>Type de prix</span>
+        <span>{t("publish.priceType")}</span>
         <div className="choice-row">
           <button type="button"
             className={priceType === "FIXED" ? "choice-chip choice-chip--selected" : "choice-chip"}
-            onClick={() => onPriceTypeChange("FIXED")}>Prix fixe</button>
+            onClick={() => onPriceTypeChange("FIXED")}>{t("publish.fixedPrice")}</button>
           <button type="button"
             className={priceType === "NEGOTIABLE" ? "choice-chip choice-chip--selected" : "choice-chip"}
-            onClick={() => onPriceTypeChange("NEGOTIABLE")}>Négociable</button>
+            onClick={() => onPriceTypeChange("NEGOTIABLE")}>{t("publish.negotiable")}</button>
         </div>
       </div>
 
@@ -85,12 +87,12 @@ export default function PriceLocationStep({
         <input type="checkbox" checked={allowOffers}
           onChange={event => onAllowOffersChange(event.target.checked)} />
         <div>
-          <strong>Autoriser les offres</strong>
-          <span>Les acheteurs pourront proposer un autre prix.</span>
+          <strong>{t("publish.allowOffers")}</strong>
+          <span>{t("publish.allowOffersText")}</span>
         </div>
       </label>
 
-      <div className="form-section-title">Localisation</div>
+      <div className="form-section-title">{t("publish.location")}</div>
       <LocationSelector
         provinceId={provinceId}
         communeId={communeId}
@@ -115,8 +117,7 @@ export default function PriceLocationStep({
 
       {!hasLocation && Boolean(communeId) && (
         <p className="approximate-location__note">
-          Aucune coordonnée n'est renseignée pour cette localité :
-          la localisation administrative sera tout de même sauvegardée.
+          {t("publish.noCoordinates")}
         </p>
       )}
     </section>

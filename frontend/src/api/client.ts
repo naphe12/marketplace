@@ -1,4 +1,4 @@
-const API_URL =
+export const API_URL =
   import.meta.env.VITE_API_URL ??
   "http://127.0.0.1:8000/api/v1";
 
@@ -77,4 +77,32 @@ export async function apiRequest<T>(
   }
 
   return response.json();
+}
+
+export async function downloadApiFile(
+  path: string,
+  filename: string,
+) {
+  const token = localStorage.getItem("access_token");
+  const headers = new Headers();
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_URL}${path}`, { headers });
+
+  if (!response.ok) {
+    throw new Error(`Export impossible (HTTP ${response.status}).`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }

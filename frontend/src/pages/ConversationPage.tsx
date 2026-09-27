@@ -20,6 +20,10 @@ import OfferCard from "../components/messages/OfferCard";
 import TransactionCard from "../components/messages/TransactionCard";
 
 import type {
+  MeetupPayload,
+} from "../components/messages/MessageBubble";
+
+import type {
   Message,
 } from "../components/messages/types";
 
@@ -95,6 +99,27 @@ export default function ConversationPage() {
     useState<Date | null>(null);
 
   const [reportingMessageId, setReportingMessageId] =
+    useState<string | null>(null);
+
+  const [meetupOpen, setMeetupOpen] =
+    useState(false);
+
+  const [meetupDateTime, setMeetupDateTime] =
+    useState("");
+
+  const [meetupLocation, setMeetupLocation] =
+    useState("");
+
+  const [meetupInstructions, setMeetupInstructions] =
+    useState("");
+
+  const [meetupSending, setMeetupSending] =
+    useState(false);
+
+  const [editingMeetupId, setEditingMeetupId] =
+    useState<string | null>(null);
+
+  const [meetupResponseLoadingId, setMeetupResponseLoadingId] =
     useState<string | null>(null);
 
   const [
@@ -265,6 +290,160 @@ export default function ConversationPage() {
     }
   }
 
+
+
+  function resetMeetupForm() {
+    setEditingMeetupId(null);
+    setMeetupDateTime("");
+    setMeetupLocation("");
+    setMeetupInstructions("");
+  }
+
+
+  async function proposeMeetup() {
+    if (!conversationId) {
+      return;
+    }
+
+    if (!meetupDateTime || meetupLocation.trim().length < 3) {
+      setError("Indiquez une date, une heure et un lieu public.");
+      return;
+    }
+
+    setMeetupSending(true);
+    setError("");
+
+    try {
+      const endpoint = editingMeetupId
+        ? `/conversations/${conversationId}/meetups/${editingMeetupId}`
+        : `/conversations/${conversationId}/meetups`;
+
+      const message = await apiRequest<Message>(
+        endpoint,
+        {
+          method: editingMeetupId ? "PATCH" : "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            scheduled_at: new Date(meetupDateTime).toISOString(),
+            location_label: meetupLocation.trim(),
+            instructions: meetupInstructions.trim() || null,
+          }),
+        },
+      );
+
+      setMessages(current => [...current, message]);
+      setMeetupOpen(false);
+      resetMeetupForm();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : editingMeetupId
+            ? "Impossible de modifier ce rendez-vous."
+            : "Impossible de proposer ce rendez-vous.",
+      );
+    } finally {
+      setMeetupSending(false);
+    }
+  }
+
+
+
+  function editMeetup(message: Message, payload: MeetupPayload) {
+    setEditingMeetupId(message.id);
+    setMeetupOpen(true);
+    setMeetupDateTime(
+      payload.scheduled_at
+        ? new Date(payload.scheduled_at).toISOString().slice(0, 16)
+        : "",
+    );
+    setMeetupLocation(payload.location_label ?? "");
+    setMeetupInstructions(payload.instructions ?? "");
+  }
+
+
+  async function cancelMeetup(message: Message) {
+    if (!conversationId) {
+      return;
+    }
+
+    const reason = window.prompt("Pourquoi annulez-vous ce rendez-vous ?");
+
+    if (reason === null) {
+      return;
+    }
+
+    setMeetupResponseLoadingId(message.id);
+    setError("");
+
+    try {
+      const response = await apiRequest<Message>(
+        `/conversations/${conversationId}/meetups/${message.id}/cancel`,
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            reason: reason.trim() || null,
+          }),
+        },
+      );
+
+      setMessages(current => [...current, response]);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible d'annuler ce rendez-vous.",
+      );
+    } finally {
+      setMeetupResponseLoadingId(null);
+    }
+  }
+
+
+  async function respondToMeetup(
+    message: Message,
+    decision: "ACCEPTED" | "REJECTED",
+  ) {
+    if (!conversationId) {
+      return;
+    }
+
+    const note = decision === "REJECTED"
+      ? window.prompt("Pourquoi refusez-vous ce rendez-vous ?")
+      : null;
+
+    if (note === null && decision === "REJECTED") {
+      return;
+    }
+
+    setMeetupResponseLoadingId(message.id);
+    setError("");
+
+    try {
+      const response = await apiRequest<Message>(
+        `/conversations/${conversationId}/meetups/${message.id}/response`,
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({
+            decision,
+            note: note?.trim() || null,
+          }),
+        },
+      );
+
+      setMessages(current => [...current, response]);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Impossible de répondre à ce rendez-vous.",
+      );
+    } finally {
+      setMeetupResponseLoadingId(null);
+    }
+  }
 
 
   async function reportMessage(message: Message) {
@@ -479,6 +658,48 @@ export default function ConversationPage() {
   );
 
 
+  const meetupStatuses = useMemo(() => {
+    const statuses = new Map<
+      string,
+      "PENDING" | "ACCEPTED" | "REJECTED" | "UPDATED" | "CANCELLED"
+    >();
+
+    for (const message of messages) {
+      if (message.message_type === "MEETUP") {
+        statuses.set(message.id, "PENDING");
+        continue;
+      }
+
+      if (!["MEETUP_RESPONSE", "MEETUP_UPDATE", "MEETUP_CANCELLED"].includes(message.message_type)) {
+        continue;
+      }
+
+      try {
+        const payload = JSON.parse(message.content) as {
+          meetup_message_id?: string;
+          decision?: "ACCEPTED" | "REJECTED";
+        };
+
+        if (!payload.meetup_message_id) {
+          continue;
+        }
+
+        if (message.message_type === "MEETUP_CANCELLED") {
+          statuses.set(payload.meetup_message_id, "CANCELLED");
+        } else if (message.message_type === "MEETUP_UPDATE") {
+          statuses.set(payload.meetup_message_id, "UPDATED");
+        } else if (payload.decision) {
+          statuses.set(payload.meetup_message_id, payload.decision);
+        }
+      } catch {
+        // Ignore malformed system messages in the local status summary.
+      }
+    }
+
+    return statuses;
+  }, [messages]);
+
+
   /*
    * Messages + offres + transactions
    * dans une seule timeline.
@@ -666,6 +887,7 @@ export default function ConversationPage() {
                         item.transaction.id,
                       )
                     }
+                    onDeliveryChanged={() => void reloadTransactions()}
                   />
                 );
               }
@@ -685,6 +907,13 @@ export default function ConversationPage() {
                       .sender_id ===
                     user.id
                   }
+                  meetupResponding={meetupResponseLoadingId === item.message.id}
+                  meetupStatus={item.message.message_type === "MEETUP" ? meetupStatuses.get(item.message.id) ?? "PENDING" : undefined}
+                  meetupRespondable={item.message.message_type === "MEETUP" && !meetupStatuses.has(item.message.id) || meetupStatuses.get(item.message.id) === "PENDING" || meetupStatuses.get(item.message.id) === "UPDATED"}
+                  meetupEditable={item.message.message_type === "MEETUP" && item.message.sender_id === user.id}
+                  onMeetupResponse={item.message.message_type === "MEETUP" ? respondToMeetup : undefined}
+                  onMeetupEdit={editMeetup}
+                  onMeetupCancel={cancelMeetup}
                   onReport={reportingMessageId === item.message.id ? undefined : reportMessage}
                 />
               );
@@ -693,6 +922,69 @@ export default function ConversationPage() {
 
         </div>
 
+
+        <section className="meetup-panel">
+          <div className="meetup-panel__heading">
+            <div>
+              <strong>Rendez-vous sécurisé</strong>
+              <span>Proposez un lieu public et une heure avant de vous déplacer.</span>
+            </div>
+
+            <button
+              type="button"
+              className="secondary-button inline-button"
+              onClick={() => setMeetupOpen(value => !value)}
+            >
+              {meetupOpen ? "Fermer" : editingMeetupId ? "Modifier" : "Proposer"}
+            </button>
+          </div>
+
+          {meetupOpen && (
+            <div className="meetup-form">
+              <label>
+                Date et heure
+                <input
+                  type="datetime-local"
+                  value={meetupDateTime}
+                  onChange={event => setMeetupDateTime(event.target.value)}
+                />
+              </label>
+
+              <label>
+                Lieu public
+                <input
+                  value={meetupLocation}
+                  onChange={event => setMeetupLocation(event.target.value)}
+                  placeholder="Ex. Devant l'entrée principale du marché"
+                  maxLength={200}
+                />
+              </label>
+
+              <label>
+                Consignes
+                <textarea
+                  value={meetupInstructions}
+                  onChange={event => setMeetupInstructions(event.target.value)}
+                  placeholder="Ex. Venez accompagné, vérifiez l'article sur place..."
+                  maxLength={1000}
+                />
+              </label>
+
+              <button
+                type="button"
+                className="primary-button inline-button"
+                disabled={meetupSending}
+                onClick={() => void proposeMeetup()}
+              >
+                {meetupSending
+                  ? "Envoi..."
+                  : editingMeetupId
+                    ? "Envoyer la modification"
+                    : "Envoyer la proposition"}
+              </button>
+            </div>
+          )}
+        </section>
 
         <MessageComposer
           text={text}

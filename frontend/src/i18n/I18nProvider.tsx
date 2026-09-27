@@ -25,6 +25,14 @@ const storageKey = "marketbi-language";
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function normalizeLanguageCode(value: string | null): string | null {
+  if (value === "rn") {
+    return "ki";
+  }
+
+  return value;
+}
+
 function isLanguageCode(value: string | null): value is LanguageCode {
   return languages.some(language => language.code === value);
 }
@@ -34,13 +42,17 @@ function initialLanguage(): LanguageCode {
     return defaultLanguage;
   }
 
-  const saved = window.localStorage.getItem(storageKey);
+  const saved = normalizeLanguageCode(
+    window.localStorage.getItem(storageKey),
+  );
 
   if (isLanguageCode(saved)) {
     return saved;
   }
 
-  const browserLanguage = window.navigator.language.slice(0, 2);
+  const browserLanguage = normalizeLanguageCode(
+    window.navigator.language.slice(0, 2),
+  );
 
   if (isLanguageCode(browserLanguage)) {
     return browserLanguage;

@@ -1,10 +1,12 @@
-const steps = [
-  "Catégorie",
-  "Informations",
-  "Photos",
-  "Prix",
-  "Vérification",
-];
+import { useI18n } from "../../i18n/I18nProvider";
+
+const stepKeys = [
+  "publish.stepCategory",
+  "publish.stepInfo",
+  "publish.stepPhotos",
+  "publish.stepPrice",
+  "publish.stepReview",
+] as const;
 
 
 export default function PublishStepper({
@@ -12,15 +14,17 @@ export default function PublishStepper({
 }: {
   currentStep: number;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="publish-stepper">
       <div className="publish-stepper__header">
         <span>
-          Étape {currentStep} sur {steps.length}
+          {t("publish.step")} {currentStep} {t("publish.stepOf")} {stepKeys.length}
         </span>
 
         <strong>
-          {steps[currentStep - 1]}
+          {t(stepKeys[currentStep - 1])}
         </strong>
       </div>
 
@@ -29,7 +33,7 @@ export default function PublishStepper({
           className="publish-progress__value"
           style={{
             width: `${
-              (currentStep / steps.length) * 100
+              (currentStep / stepKeys.length) * 100
             }%`,
           }}
         />

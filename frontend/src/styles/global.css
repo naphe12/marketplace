@@ -9054,3 +9054,260 @@ iframe {
     height: 40px;
   }
 }
+
+
+.favorite-compare-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgb(15 23 42 / 9%);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.favorite-compare-bar > div,
+.favorite-compare-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.favorite-compare-bar span {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.favorite-compare-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.favorite-compare-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 750;
+  color: var(--color-text);
+}
+
+.favorite-compare-select input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.favorite-comparison-panel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid rgb(15 23 42 / 9%);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.favorite-comparison-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.favorite-comparison-heading span {
+  color: var(--color-text-secondary);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.favorite-comparison-heading h2 {
+  margin: 2px 0 0;
+}
+
+.favorite-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.favorite-comparison-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgb(15 23 42 / 9%);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.favorite-comparison-card img,
+.favorite-comparison-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.favorite-comparison-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-weight: 800;
+}
+
+.favorite-comparison-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.favorite-comparison-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.favorite-comparison-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgb(15 23 42 / 7%);
+  padding-bottom: 7px;
+}
+
+.favorite-comparison-card dt {
+  color: var(--color-text-secondary);
+}
+
+.favorite-comparison-card dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.favorite-comparison-remove {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 76%);
+  color: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .favorite-compare-bar,
+  .favorite-comparison-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .favorite-compare-actions,
+  .favorite-compare-actions > * {
+    width: 100%;
+  }
+}
+
+
+.meetup-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid rgb(15 23 42 / 9%);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.meetup-panel__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.meetup-panel__heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.meetup-panel__heading span {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.meetup-form {
+  display: grid;
+  gap: 12px;
+}
+
+.meetup-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.meetup-form input,
+.meetup-form textarea {
+  width: 100%;
+  border: 1px solid rgb(15 23 42 / 12%);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--color-text);
+  background: #f8fafc;
+}
+
+.meetup-form textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.meetup-message {
+  display: grid;
+  gap: 5px;
+}
+
+.meetup-message strong {
+  font-size: 0.95rem;
+}
+
+.meetup-message span {
+  display: block;
+}
+
+.meetup-message p {
+  margin: 4px 0 0;
+}
+
+@media (max-width: 700px) {
+  .meetup-panel__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+.meetup-response-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.meetup-response-actions .primary-button,
+.meetup-response-actions .secondary-button {
+  min-height: 34px;
+  padding: 0 11px;
+}

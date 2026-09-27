@@ -11,6 +11,9 @@ import {
 import {
   apiRequest,
 } from "../../api/client";
+import {
+  useI18n,
+} from "../../i18n/I18nProvider";
 
 import type {
   AdministrativeArea,
@@ -61,6 +64,7 @@ export default function LocationSelector({
 
   onLocationResolved,
 }: Props) {
+  const { t } = useI18n();
   const [provinces, setProvinces] =
     useState<AdministrativeArea[]>([]);
 
@@ -326,13 +330,11 @@ export default function LocationSelector({
 
         <div>
           <strong>
-            Où se trouve l'article ?
+            {t("publish.locationTitle")}
           </strong>
 
           <span>
-            Choisissez la localisation la plus
-            précise possible. L'adresse exacte
-            n'est pas affichée aux acheteurs.
+            {t("publish.locationText")}
           </span>
         </div>
       </div>
@@ -341,7 +343,7 @@ export default function LocationSelector({
       <div className="location-fields">
 
         <label className="form-field">
-          <span>Province *</span>
+          <span>{t("publish.province")}</span>
 
           <select
             value={provinceId}
@@ -354,8 +356,8 @@ export default function LocationSelector({
           >
             <option value="">
               {loadingProvinces
-                ? "Chargement..."
-                : "Choisir une province"}
+                ? t("publish.loading")
+                : t("publish.chooseProvince")}
             </option>
 
             {provinces.map(
@@ -373,7 +375,7 @@ export default function LocationSelector({
 
 
         <label className="form-field">
-          <span>Commune *</span>
+          <span>{t("publish.commune")}</span>
 
           <select
             value={communeId}
@@ -389,10 +391,10 @@ export default function LocationSelector({
           >
             <option value="">
               {!provinceId
-                ? "Choisir d'abord une province"
+                ? t("publish.chooseProvinceFirst")
                 : loadingCommunes
-                  ? "Chargement..."
-                  : "Choisir une commune"}
+                  ? t("publish.loading")
+                  : t("publish.chooseCommune")}
             </option>
 
             {communes.map(
@@ -410,7 +412,7 @@ export default function LocationSelector({
 
 
         <label className="form-field">
-          <span>Zone</span>
+          <span>{t("publish.zone")}</span>
 
           <select
             value={zoneId}
@@ -426,10 +428,10 @@ export default function LocationSelector({
           >
             <option value="">
               {!communeId
-                ? "Choisir d'abord une commune"
+                ? t("publish.chooseCommuneFirst")
                 : loadingZones
-                  ? "Chargement..."
-                  : "Choisir une zone"}
+                  ? t("publish.loading")
+                  : t("publish.chooseZone")}
             </option>
 
             {zones.map(
@@ -448,7 +450,7 @@ export default function LocationSelector({
 
         <label className="form-field">
           <span>
-            Quartier / Colline
+            {t("publish.locality")}
           </span>
 
           <select
@@ -465,10 +467,10 @@ export default function LocationSelector({
           >
             <option value="">
               {!zoneId
-                ? "Choisir d'abord une zone"
+                ? t("publish.chooseZoneFirst")
                 : loadingLocalities
-                  ? "Chargement..."
-                  : "Choisir un quartier ou une colline"}
+                  ? t("publish.loading")
+                  : t("publish.chooseLocality")}
             </option>
 
             {localities.map(
@@ -481,8 +483,8 @@ export default function LocationSelector({
                   {" · "}
                   {locality.area_type ===
                   "QUARTIER"
-                    ? "Quartier"
-                    : "Colline"}
+                    ? t("publish.quartier")
+                    : t("publish.colline")}
                 </option>
               ),
             )}

@@ -1,7 +1,10 @@
+import csv
 from datetime import datetime, time, timezone
+from io import StringIO
+from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import String, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -76,6 +79,21 @@ router = APIRouter(
 def apply_values(target, values: dict):
     for key, value in values.items():
         setattr(target, key, value)
+
+
+def csv_response(filename: str, rows: list[dict]) -> Response:
+    buffer = StringIO()
+    fieldnames = list(rows[0].keys()) if rows else ["empty"]
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+    return Response(
+        content=buffer.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
 
 
 async def count(
@@ -583,42 +601,161 @@ async def admin_escalate_fraud(signal_id: UUID, data: AdminFraudSignalActionRequ
 @router.get("/transactions", response_model=AdminTransactionListResponse)
 async def admin_transactions(
     status: str | None = None,
+    buyer_id: UUID | None = None,
+    seller_id: UUID | None = None,
+    listing_id: UUID | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    format: str = Query(default="json", pattern="^(json|csv)$"),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
-    query = select(Transaction)
+    filters = []
     if status:
-        query = query.where(Transaction.status == status.upper())
-    result = await db.execute(query.order_by(Transaction.created_at.desc()))
+        filters.append(Transaction.status == status.upper())
+    if buyer_id:
+        filters.append(Transaction.buyer_id == buyer_id)
+    if seller_id:
+        filters.append(Transaction.seller_id == seller_id)
+    if listing_id:
+        filters.append(Transaction.listing_id == listing_id)
+    if created_from:
+        filters.append(Transaction.created_at >= created_from)
+    if created_to:
+        filters.append(Transaction.created_at <= created_to)
+
+    query = select(Transaction).where(*filters).order_by(Transaction.created_at.desc())
+
+    if format == "csv":
+        result = await db.execute(query.limit(5000))
+        rows = [
+            {
+                "id": str(item.id),
+                "listing_id": str(item.listing_id),
+                "buyer_id": str(item.buyer_id),
+                "seller_id": str(item.seller_id),
+                "offer_id": str(item.offer_id) if item.offer_id else "",
+                "status": item.status,
+                "created_at": item.created_at.isoformat() if item.created_at else "",
+                "completed_at": item.completed_at.isoformat() if item.completed_at else "",
+            }
+            for item in result.scalars().all()
+        ]
+        return csv_response("transactions.csv", rows)
+
+    result = await db.execute(query.offset(offset).limit(limit))
     return {"items": list(result.scalars().all())}
 
 
 @router.get("/reviews", response_model=AdminReviewListResponse)
 async def admin_reviews(
     status: str | None = None,
+    reviewer_id: UUID | None = None,
+    reviewed_user_id: UUID | None = None,
+    transaction_id: UUID | None = None,
+    rating_min: int | None = Query(default=None, ge=1, le=5),
+    rating_max: int | None = Query(default=None, ge=1, le=5),
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    format: str = Query(default="json", pattern="^(json|csv)$"),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
-    query = select(Review)
+    filters = []
     if status:
-        query = query.where(Review.status == status.upper())
-    result = await db.execute(query.order_by(Review.created_at.desc()))
+        filters.append(Review.status == status.upper())
+    if reviewer_id:
+        filters.append(Review.reviewer_id == reviewer_id)
+    if reviewed_user_id:
+        filters.append(Review.reviewed_user_id == reviewed_user_id)
+    if transaction_id:
+        filters.append(Review.transaction_id == transaction_id)
+    if rating_min is not None:
+        filters.append(Review.rating >= rating_min)
+    if rating_max is not None:
+        filters.append(Review.rating <= rating_max)
+    if created_from:
+        filters.append(Review.created_at >= created_from)
+    if created_to:
+        filters.append(Review.created_at <= created_to)
+
+    query = select(Review).where(*filters).order_by(Review.created_at.desc())
+
+    if format == "csv":
+        result = await db.execute(query.limit(5000))
+        rows = [
+            {
+                "id": str(item.id),
+                "transaction_id": str(item.transaction_id),
+                "reviewer_id": str(item.reviewer_id),
+                "reviewed_user_id": str(item.reviewed_user_id),
+                "rating": item.rating,
+                "status": item.status,
+                "comment": item.comment or "",
+                "created_at": item.created_at.isoformat() if item.created_at else "",
+            }
+            for item in result.scalars().all()
+        ]
+        return csv_response("reviews.csv", rows)
+
+    result = await db.execute(query.offset(offset).limit(limit))
     return {"items": list(result.scalars().all())}
 
 
 @router.get("/billing", response_model=AdminBillingListResponse)
 async def admin_billing(
     status: str | None = None,
+    user_id: UUID | None = None,
+    listing_id: UUID | None = None,
+    order_number: str | None = None,
+    provider: str | None = None,
+    payment_method: str | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    paid_from: datetime | None = None,
+    paid_to: datetime | None = None,
+    format: str = Query(default="json", pattern="^(json|csv)$"),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
+    filters = []
+    if status:
+        filters.append(BillingPayment.status == status.upper())
+    if user_id:
+        filters.append(BillingPayment.user_id == user_id)
+    if listing_id:
+        filters.append(BillingOrder.listing_id == listing_id)
+    if order_number:
+        filters.append(BillingOrder.order_number.ilike(f"%{order_number.strip()}%"))
+    if provider:
+        filters.append(BillingPayment.provider == provider.upper())
+    if payment_method:
+        filters.append(BillingPayment.payment_method == payment_method.upper())
+    if created_from:
+        filters.append(BillingPayment.created_at >= created_from)
+    if created_to:
+        filters.append(BillingPayment.created_at <= created_to)
+    if paid_from:
+        filters.append(BillingPayment.paid_at >= paid_from)
+    if paid_to:
+        filters.append(BillingPayment.paid_at <= paid_to)
+
     query = (
         select(BillingPayment, BillingOrder)
         .join(BillingOrder, BillingOrder.id == BillingPayment.billing_order_id)
+        .where(*filters)
+        .order_by(BillingPayment.created_at.desc())
     )
-    if status:
-        query = query.where(BillingPayment.status == status.upper())
-    result = await db.execute(query.order_by(BillingPayment.created_at.desc()))
+
+    result = await db.execute(
+        query.limit(5000) if format == "csv" else query.offset(offset).limit(limit)
+    )
     items = []
     for payment, order in result.all():
         items.append(
@@ -639,6 +776,17 @@ async def admin_billing(
                 "paid_at": payment.paid_at,
             }
         )
+
+    if format == "csv":
+        rows = [
+            {
+                key: (value.isoformat() if hasattr(value, "isoformat") else str(value) if value is not None else "")
+                for key, value in item.items()
+            }
+            for item in items
+        ]
+        return csv_response("billing_payments.csv", rows)
+
     return {"items": items}
 
 
@@ -986,6 +1134,16 @@ async def list_listings(
     seller_id: UUID | None = None,
     category_id: UUID | None = None,
     administrative_area_id: UUID | None = None,
+    condition: str | None = None,
+    price_type: str | None = None,
+    allow_offers: bool | None = None,
+    price_min: Decimal | None = Query(default=None, ge=0),
+    price_max: Decimal | None = Query(default=None, ge=0),
+    published_from: datetime | None = None,
+    published_to: datetime | None = None,
+    expires_from: datetime | None = None,
+    expires_to: datetime | None = None,
+    sort: str = Query(default="updated_desc"),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -995,7 +1153,13 @@ async def list_listings(
 
     if q:
         search = f"%{q.strip()}%"
-        filters.append(or_(Listing.title.ilike(search), Listing.description.ilike(search)))
+        filters.append(
+            or_(
+                Listing.title.ilike(search),
+                Listing.description.ilike(search),
+                Listing.id.cast(String).ilike(search),
+            )
+        )
 
     if status:
         filters.append(Listing.status == status.upper())
@@ -1009,13 +1173,52 @@ async def list_listings(
     if administrative_area_id:
         filters.append(Listing.administrative_area_id == administrative_area_id)
 
+    if condition:
+        filters.append(Listing.condition == condition.upper())
+
+    if price_type:
+        filters.append(Listing.price_type == price_type.upper())
+
+    if allow_offers is not None:
+        filters.append(Listing.allow_offers == allow_offers)
+
+    if price_min is not None:
+        filters.append(Listing.price >= price_min)
+
+    if price_max is not None:
+        filters.append(Listing.price <= price_max)
+
+    if published_from is not None:
+        filters.append(Listing.published_at >= published_from)
+
+    if published_to is not None:
+        filters.append(Listing.published_at <= published_to)
+
+    if expires_from is not None:
+        filters.append(Listing.expires_at >= expires_from)
+
+    if expires_to is not None:
+        filters.append(Listing.expires_at <= expires_to)
+
     total = await count(db, select(func.count(Listing.id)).where(*filters))
+
+    sort_options = {
+        "updated_asc": Listing.updated_at.asc(),
+        "created_desc": Listing.created_at.desc(),
+        "created_asc": Listing.created_at.asc(),
+        "published_desc": Listing.published_at.desc().nullslast(),
+        "expires_asc": Listing.expires_at.asc().nullslast(),
+        "price_desc": Listing.price.desc().nullslast(),
+        "price_asc": Listing.price.asc().nullslast(),
+    }
+
+    order_by = sort_options.get(sort, Listing.updated_at.desc())
 
     result = await db.execute(
         select(Listing)
         .options(selectinload(Listing.images))
         .where(*filters)
-        .order_by(Listing.updated_at.desc())
+        .order_by(order_by)
         .offset(offset)
         .limit(limit)
     )

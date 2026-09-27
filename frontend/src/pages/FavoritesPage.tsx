@@ -2,6 +2,8 @@ import {
   Folder,
   Heart,
   Plus,
+  Scale,
+  X,
 } from "lucide-react";
 
 import {
@@ -54,6 +56,9 @@ export default function FavoritesPage() {
 
   const [attempt, setAttempt] =
     useState(0);
+
+  const [comparisonIds, setComparisonIds] =
+    useState<string[]>([]);
 
 
   useEffect(() => {
@@ -132,8 +137,49 @@ export default function FavoritesPage() {
   );
 
 
+  const comparedFavorites = useMemo(
+    () => comparisonIds
+      .map(id => favorites.find(item => item.listing.id === id))
+      .filter((item): item is FavoriteItem => Boolean(item)),
+    [comparisonIds, favorites],
+  );
+
+
   function folderCount(folderId: string | null) {
     return favorites.filter(item => item.folder_id === folderId).length;
+  }
+
+
+  function toggleComparison(listingId: string) {
+    setComparisonIds(current => {
+      if (current.includes(listingId)) {
+        return current.filter(id => id !== listingId);
+      }
+
+      if (current.length >= 4) {
+        return current;
+      }
+
+      return [...current, listingId];
+    });
+  }
+
+
+  function formatPrice(value: string | null, currency: string) {
+    if (!value) {
+      return "Prix non renseigné";
+    }
+
+    return `${Number(value).toLocaleString("fr-FR")} ${currency}`;
+  }
+
+
+  function formatDate(value: string | null) {
+    if (!value) {
+      return "-";
+    }
+
+    return new Date(value).toLocaleDateString("fr-FR");
   }
 
 
@@ -330,6 +376,110 @@ export default function FavoritesPage() {
         </form>
       </section>
 
+      {favorites.length > 0 && (
+        <section className="favorite-compare-bar">
+          <div>
+            <Scale size={18} />
+            <strong>Comparer des annonces</strong>
+            <span>{comparisonIds.length}/4 sélectionnée{comparisonIds.length > 1 ? "s" : ""}</span>
+          </div>
+
+          <div className="favorite-compare-actions">
+            <button
+              type="button"
+              className="secondary-button inline-button"
+              disabled={comparisonIds.length === 0}
+              onClick={() => setComparisonIds([])}
+            >
+              <X size={16} />
+              Vider
+            </button>
+
+            <a
+              className={
+                comparisonIds.length >= 2
+                  ? "primary-button inline-button"
+                  : "primary-button inline-button favorite-compare-disabled"
+              }
+              href="#favorite-comparison"
+              aria-disabled={comparisonIds.length < 2}
+            >
+              <Scale size={16} />
+              Comparer
+            </a>
+          </div>
+        </section>
+      )}
+
+      {comparedFavorites.length >= 2 && (
+        <section id="favorite-comparison" className="favorite-comparison-panel">
+          <div className="favorite-comparison-heading">
+            <div>
+              <span>Comparaison</span>
+              <h2>{comparedFavorites.length} annonces sélectionnées</h2>
+            </div>
+
+            <button type="button" className="text-button" onClick={() => setComparisonIds([])}>
+              Fermer la comparaison
+            </button>
+          </div>
+
+          <div className="favorite-comparison-grid">
+            {comparedFavorites.map(item => {
+              const image = item.listing.images.find(photo => photo.is_primary) ?? item.listing.images[0];
+
+              return (
+                <article key={item.listing.id} className="favorite-comparison-card">
+                  <button
+                    type="button"
+                    className="favorite-comparison-remove"
+                    onClick={() => toggleComparison(item.listing.id)}
+                    aria-label="Retirer de la comparaison"
+                  >
+                    <X size={15} />
+                  </button>
+
+                  {image ? (
+                    <img src={image.thumbnail_url ?? image.image_url} alt={item.listing.title} />
+                  ) : (
+                    <div className="favorite-comparison-placeholder">Photo</div>
+                  )}
+
+                  <h3>{item.listing.title}</h3>
+
+                  <dl>
+                    <div>
+                      <dt>Prix</dt>
+                      <dd>{formatPrice(item.listing.price, item.listing.currency)}</dd>
+                    </div>
+                    <div>
+                      <dt>État</dt>
+                      <dd>{item.listing.condition ?? "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Type de prix</dt>
+                      <dd>{item.listing.price_type}</dd>
+                    </div>
+                    <div>
+                      <dt>Publié</dt>
+                      <dd>{formatDate(item.listing.published_at)}</dd>
+                    </div>
+                    <div>
+                      <dt>Expire</dt>
+                      <dd>{formatDate(item.listing.expires_at)}</dd>
+                    </div>
+                  </dl>
+
+                  <Link className="secondary-button inline-button" to={`/listings/${item.listing.id}`}>
+                    Voir l'annonce
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {loading && (
         <p role="status">
           Chargement de vos favoris...
@@ -386,6 +536,16 @@ export default function FavoritesPage() {
         <div className="favorite-grid">
           {filteredFavorites.map(item => (
             <article key={item.listing.id} className="favorite-item-card">
+              <label className="favorite-compare-select">
+                <input
+                  type="checkbox"
+                  checked={comparisonIds.includes(item.listing.id)}
+                  disabled={!comparisonIds.includes(item.listing.id) && comparisonIds.length >= 4}
+                  onChange={() => toggleComparison(item.listing.id)}
+                />
+                <span>Comparer</span>
+              </label>
+
               <ListingCard listing={item.listing} />
               <label className="favorite-folder-select">
                 <span>Dossier</span>

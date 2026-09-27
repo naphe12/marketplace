@@ -16,6 +16,10 @@ import {
   useEffect,
 } from "react";
 
+import {
+  useI18n,
+} from "../../i18n/I18nProvider";
+
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -111,6 +115,7 @@ export default function LocationPicker({
   defaultLongitude,
   onChange,
 }: Props) {
+  const { t } = useI18n();
 
   const center: [number, number] =
     latitude !== null &&
@@ -127,7 +132,7 @@ export default function LocationPicker({
   function useCurrentLocation() {
     if (!navigator.geolocation) {
       alert(
-        "La géolocalisation n'est pas disponible sur cet appareil.",
+        t("publish.geolocationUnavailable"),
       );
 
       return;
@@ -143,7 +148,7 @@ export default function LocationPicker({
 
       () => {
         alert(
-          "Impossible d'obtenir votre position.",
+          t("publish.geolocationError"),
         );
       },
 
@@ -162,12 +167,11 @@ export default function LocationPicker({
 
         <div>
           <h3>
-            Localisation du produit
+            {t("publish.mapTitle")}
           </h3>
 
           <p>
-            Cliquez sur la carte pour
-            indiquer où se trouve le produit.
+            {t("publish.mapText")}
           </p>
         </div>
 
@@ -177,7 +181,7 @@ export default function LocationPicker({
           onClick={useCurrentLocation}
         >
           <LocateFixed size={16} />
-          <span>Ma position</span>
+          <span>{t("publish.myPosition")}</span>
         </button>
 
       </div>

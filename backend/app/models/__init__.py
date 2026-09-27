@@ -28,3 +28,5 @@ from app.models.favorite import Favorite, FavoriteFolder
 from app.models.admin_note import AdminNote
 
 from app.models.listing_metric import ListingView
+
+from app.models.delivery import Delivery

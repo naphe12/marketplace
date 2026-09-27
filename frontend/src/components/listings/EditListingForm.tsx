@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { apiRequest } from "../../api/client";
+import { useI18n } from "../../i18n/I18nProvider";
 import type { ListingDetail } from "../../types/listing";
 
 type EditableListing = Pick<ListingDetail,
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default function EditListingForm({ listing, onSaved, onCancel }: Props) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(listing.title);
   const [description, setDescription] = useState(listing.description ?? "");
   const [condition, setCondition] = useState(listing.condition ?? "");
@@ -29,7 +31,7 @@ export default function EditListingForm({ listing, onSaved, onCancel }: Props) {
     if (saving) return;
     setError(null);
     if (title.trim().length < 3) {
-      setError("Le titre doit contenir au moins 3 caractères.");
+      setError(t("listingEdit.titleTooShort"));
       return;
     }
     setSaving(true);
@@ -45,53 +47,53 @@ export default function EditListingForm({ listing, onSaved, onCancel }: Props) {
       });
       onSaved(changes);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Impossible d’enregistrer les modifications.");
+      setError(error instanceof Error ? error.message : t("listingEdit.saveError"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form className="listing-edit" onSubmit={save} aria-label="Modifier l’annonce">
-      <h2>Compléter ou modifier l’annonce</h2>
+    <form className="listing-edit" onSubmit={save} aria-label={t("listingEdit.aria")}>
+      <h2>{t("listingEdit.title")}</h2>
       <fieldset disabled={saving} className="listing-edit__fields">
-        <label className="form-field"><span>Titre</span>
+        <label className="form-field"><span>{t("publish.title")}</span>
           <input value={title} onChange={event => setTitle(event.target.value)} required minLength={3} maxLength={200} />
         </label>
-        <label className="form-field"><span>Description et informations complémentaires</span>
+        <label className="form-field"><span>{t("listingEdit.extraInfo")}</span>
           <textarea value={description} onChange={event => setDescription(event.target.value)} rows={8} />
         </label>
-        <label className="form-field"><span>État</span>
+        <label className="form-field"><span>{t("publish.condition")}</span>
           <select value={condition} onChange={event => setCondition(event.target.value)}>
-            <option value="">Non précisé</option>
-            <option value="NEW">Neuf</option><option value="USED">Occasion</option>
-            <option value="REFURBISHED">Reconditionné</option>
+            <option value="">{t("listingEdit.notSpecified")}</option>
+            <option value="NEW">{t("publish.conditionNew")}</option><option value="USED">{t("publish.conditionUsed")}</option>
+            <option value="REFURBISHED">{t("publish.conditionRefurbished")}</option>
             {condition && !["NEW", "USED", "REFURBISHED"].includes(condition) && <option value={condition}>{condition}</option>}
           </select>
         </label>
-        <label className="form-field"><span>Prix ({listing.currency})</span>
+        <label className="form-field"><span>{t("publish.price")} ({listing.currency})</span>
           <input type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)} />
-          <small>Laissez vide pour un prix sur demande.</small>
+          <small>{t("listingEdit.priceHint")}</small>
         </label>
-        <label className="form-field"><span>Type de prix</span>
+        <label className="form-field"><span>{t("publish.priceType")}</span>
           <select value={priceType} onChange={event => setPriceType(event.target.value)}>
-            <option value="FIXED">Prix fixe</option><option value="NEGOTIABLE">Négociable</option>
+            <option value="FIXED">{t("publish.fixedPrice")}</option><option value="NEGOTIABLE">{t("publish.negotiable")}</option>
             {!["FIXED", "NEGOTIABLE"].includes(priceType) && <option value={priceType}>{priceType}</option>}
           </select>
         </label>
-        <label className="form-field"><span>Quantité disponible</span>
+        <label className="form-field"><span>{t("listingEdit.quantity")}</span>
           <input type="number" min="1" step="1" required value={quantity} onChange={event => setQuantity(event.target.value)} />
         </label>
         <label className="form-checkbox">
           <input type="checkbox" checked={allowOffers} onChange={event => setAllowOffers(event.target.checked)} />
-          <span>Autoriser les offres</span>
+          <span>{t("publish.allowOffers")}</span>
         </label>
       </fieldset>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="publish-actions">
-        <button type="button" className="secondary-button" disabled={saving} onClick={onCancel}>Annuler</button>
+        <button type="button" className="secondary-button" disabled={saving} onClick={onCancel}>{t("listingEdit.cancel")}</button>
         <button type="submit" className="primary-button" disabled={saving}>
-          {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+          {saving ? t("publish.saving") : t("listingEdit.save")}
         </button>
       </div>
     </form>

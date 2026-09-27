@@ -39,6 +39,12 @@ type PublicationOrder = {
   status: string;
 };
 
+type SellerListing = {
+  id: string;
+  status: string;
+  title: string;
+};
+
 type BillingPayment = {
   id: string;
   billing_order_id: string;
@@ -85,6 +91,7 @@ export default function ListingCheckoutPage() {
 
   const navigate = useNavigate();
   const [packages, setPackages] = useState<ListingPackage[]>([]);
+  const [listing, setListing] = useState<SellerListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
@@ -98,10 +105,19 @@ export default function ListingCheckoutPage() {
   useEffect(() => {
     let mounted = true;
 
-    apiRequest<ListingPackage[]>("/listing-packages")
-      .then(items => {
+    Promise.all([
+      apiRequest<ListingPackage[]>("/listing-packages"),
+      listingId
+        ? apiRequest<SellerListing>(
+            `/listings/mine/${listingId}`,
+            { authenticated: true },
+          )
+        : Promise.resolve(null),
+    ])
+      .then(([items, loadedListing]) => {
         if (mounted) {
           setPackages(items);
+          setListing(loadedListing);
         }
       })
       .catch(cause => {
@@ -122,13 +138,21 @@ export default function ListingCheckoutPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [listingId]);
 
 
   const selectedPackage = useMemo(
     () => packages.find(item => item.id === packageId),
     [packageId, packages],
   );
+
+
+  const actionLabel =
+    listing?.status === "ACTIVE"
+      ? "Boost"
+      : listing?.status === "EXPIRED"
+        ? "Renouvellement"
+        : "Publication";
 
 
   async function createOrder() {
@@ -251,7 +275,7 @@ export default function ListingCheckoutPage() {
             <CreditCard size={22} />
           </span>
 
-          <h1>Paiement publication</h1>
+          <h1>Paiement {actionLabel.toLowerCase()}</h1>
 
           <p>
             Créez la commande, choisissez le moyen de paiement,
@@ -296,7 +320,7 @@ export default function ListingCheckoutPage() {
             <span className="checkout-step__number">1</span>
             <div>
               <strong>Commande</strong>
-              <p>Réservez le package choisi pour cette annonce.</p>
+              <p>Réservez le package choisi pour {listing?.title ? `« ${listing.title} »` : "cette annonce"}.</p>
             </div>
 
             {order ? (

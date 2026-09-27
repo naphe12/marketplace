@@ -24,6 +24,12 @@ type ListingPackage = {
   currency: string;
 };
 
+type SellerListing = {
+  id: string;
+  status: string;
+  title: string;
+};
+
 
 export default function ListingPackagesPage() {
   const {
@@ -32,16 +38,26 @@ export default function ListingPackagesPage() {
 
   const navigate = useNavigate();
   const [packages, setPackages] = useState<ListingPackage[]>([]);
+  const [listing, setListing] = useState<SellerListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
 
-    apiRequest<ListingPackage[]>("/listing-packages")
-      .then(items => {
+    Promise.all([
+      apiRequest<ListingPackage[]>("/listing-packages"),
+      listingId
+        ? apiRequest<SellerListing>(
+            `/listings/mine/${listingId}`,
+            { authenticated: true },
+          )
+        : Promise.resolve(null),
+    ])
+      .then(([items, loadedListing]) => {
         if (mounted) {
           setPackages(items);
+          setListing(loadedListing);
         }
       })
       .catch(cause => {
@@ -62,16 +78,23 @@ export default function ListingPackagesPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [listingId]);
+
+  const actionLabel =
+    listing?.status === "ACTIVE"
+      ? "Booster"
+      : listing?.status === "EXPIRED"
+        ? "Renouveler"
+        : "Publier";
 
   return (
     <div className="page">
       <div className="page-heading">
         <div>
-          <h1>Choisissez la durée</h1>
+          <h1>{actionLabel} l'annonce</h1>
           <p>
-            Sélectionnez le package de publication pour activer votre
-            annonce.
+            Sélectionnez une durée pour {actionLabel.toLowerCase()}
+            {listing?.title ? ` « ${listing.title} »` : " cette annonce"}.
           </p>
         </div>
       </div>
@@ -121,7 +144,7 @@ export default function ListingPackagesPage() {
 
             <small>
               <CreditCard size={14} />
-              Continuer vers le paiement
+              {actionLabel} avec ce package
             </small>
           </button>
         ))}

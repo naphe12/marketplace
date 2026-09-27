@@ -1,3 +1,5 @@
+import { useI18n } from "../../i18n/I18nProvider";
+
 import type {
   CategoryAttribute,
 } from "../../types/category";
@@ -47,27 +49,28 @@ export default function DetailsStep({
   onConditionChange,
   onAttributeChange,
 }: Props) {
+  const { t } = useI18n();
+
   return (
     <section className="publish-panel">
       <div className="publish-panel__heading">
         <h1>
-          Décrivez votre annonce
+          {t("publish.detailsTitle")}
         </h1>
 
         <p>
-          Plus les informations sont précises,
-          plus l'acheteur peut avoir confiance.
+          {t("publish.detailsText")}
         </p>
       </div>
 
 
       <label className="form-field">
-        <span>Titre</span>
+        <span>{t("publish.title")}</span>
 
         <input
           value={title}
           maxLength={200}
-          placeholder="Ex. iPhone 15 Pro 256 GB"
+          placeholder={t("publish.titlePlaceholder")}
           onChange={event =>
             onTitleChange(
               event.target.value,
@@ -76,21 +79,21 @@ export default function DetailsStep({
         />
 
         <small>
-          {title.length}/200 — 3 caractères minimum
+          {title.length}/200 — {t("publish.titleMin")}
         </small>
       </label>
 
 
       <div className="form-field">
-        <span>État</span>
+        <span>{t("publish.condition")}</span>
 
         <div className="choice-row">
           {[
-            ["NEW", "Neuf"],
-            ["USED", "Occasion"],
+            ["NEW", t("publish.conditionNew")],
+            ["USED", t("publish.conditionUsed")],
             [
               "REFURBISHED",
-              "Reconditionné",
+              t("publish.conditionRefurbished"),
             ],
           ].map(([value, label]) => (
             <button
@@ -113,17 +116,13 @@ export default function DetailsStep({
 
 
       <label className="form-field">
-        <span>Description</span>
+        <span>{t("publish.description")}</span>
 
         <textarea
           value={description}
           rows={7}
           maxLength={3000}
-          placeholder={
-            "Décrivez l'état, l'historique, " +
-            "les éventuels défauts et ce qui " +
-            "est inclus dans la vente."
-          }
+          placeholder={t("publish.descriptionPlaceholder")}
           onChange={event =>
             onDescriptionChange(
               event.target.value,
@@ -140,7 +139,7 @@ export default function DetailsStep({
       {attributes.length > 0 && (
         <>
           <div className="form-section-title">
-            Caractéristiques
+            {t("publish.attributes")}
           </div>
 
           <div className="dynamic-fields">
@@ -186,6 +185,8 @@ function DynamicAttributeField({
     value: string | number | boolean,
   ) => void;
 }) {
+  const { t } = useI18n();
+
   if (
     attribute.data_type === "SELECT"
   ) {
@@ -209,7 +210,7 @@ function DynamicAttributeField({
           }
         >
           <option value="">
-            Sélectionner
+            {t("publish.select")}
           </option>
 
           {attribute.options?.values?.map(

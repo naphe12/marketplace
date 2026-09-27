@@ -9,7 +9,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
 
@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 def generate_transaction_number() -> str:
@@ -109,3 +109,9 @@ class Transaction(UUIDMixin, TimestampMixin, Base):
     index=True,
     default=generate_transaction_number,
 )
+
+    delivery: Mapped["Delivery | None"] = relationship(
+        back_populates="transaction",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

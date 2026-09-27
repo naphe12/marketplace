@@ -1,3 +1,5 @@
+import { useI18n } from "../../i18n/I18nProvider";
+
 import type {
   Category,
 } from "../../types/category";
@@ -21,16 +23,17 @@ export default function CategoryStep({
   onSelect,
   disabled = false,
 }: Props) {
+  const { t } = useI18n();
+
   return (
     <section className="publish-panel">
       <div className="publish-panel__heading">
         <h1>
-          Que souhaitez-vous vendre ?
+          {t("publish.categoryTitle")}
         </h1>
 
         <p>
-          Choisissez la catégorie qui
-          correspond le mieux à votre annonce.
+          {t("publish.categoryText")}
         </p>
       </div>
 

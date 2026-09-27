@@ -43,6 +43,7 @@ class PublicationService:
         )
 
         if listing.status not in {
+            "ACTIVE",
             "DRAFT",
             "EXPIRED",
             "PENDING_PAYMENT",
@@ -51,7 +52,7 @@ class PublicationService:
                 status_code=400,
                 detail=(
                     "Cette annonce ne peut pas "
-                    "être publiée actuellement."
+                    "être publiée ou boostée actuellement."
                 ),
             )
 
@@ -111,7 +112,8 @@ class PublicationService:
 
         db.add(order)
 
-        listing.status = "PENDING_PAYMENT"
+        if listing.status != "ACTIVE":
+            listing.status = "PENDING_PAYMENT"
 
         await db.commit()
 

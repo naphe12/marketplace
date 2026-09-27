@@ -26,6 +26,10 @@ import {
   useAuth,
 } from "../auth/AuthContext";
 
+import {
+  useI18n,
+} from "../i18n/I18nProvider";
+
 import ListingCard from "../components/listings/ListingCard";
 import SearchResultsMap from "../components/location/SearchResultsMap";
 
@@ -56,18 +60,9 @@ const sortOptions = [
 ];
 
 const conditions = [
-  {
-    value: "NEW",
-    label: "Neuf",
-  },
-  {
-    value: "USED",
-    label: "Occasion",
-  },
-  {
-    value: "REFURBISHED",
-    label: "Reconditionné",
-  },
+  "NEW",
+  "USED",
+  "REFURBISHED",
 ];
 
 
@@ -92,6 +87,7 @@ function compactParams(
 
 export default function SearchPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [params, setParams] = useSearchParams();
 
   const query = getParam(params, "q");
@@ -277,7 +273,7 @@ export default function SearchPage() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Impossible de charger les annonces.",
+              : t("search.loadError"),
           );
         }
       })
@@ -350,11 +346,11 @@ export default function SearchPage() {
 
   async function saveCurrentSearch() {
     if (!user) {
-      setSavedSearchError("Connectez-vous pour sauvegarder cette recherche.");
+      setSavedSearchError(t("search.savedLogin"));
       return;
     }
 
-    const name = savedSearchName.trim() || query || "Recherche sauvegardée";
+    const name = savedSearchName.trim() || query || t("search.savedDefault");
 
     setSavingSearch(true);
     setSavedSearchError("");
@@ -379,7 +375,7 @@ export default function SearchPage() {
       setSavedSearchError(
         cause instanceof Error
           ? cause.message
-          : "Impossible de sauvegarder cette recherche.",
+          : t("search.savedError"),
       );
     } finally {
       setSavingSearch(false);
@@ -405,6 +401,19 @@ export default function SearchPage() {
   }
 
 
+  function getConditionLabel(value: string) {
+    if (value === "NEW") {
+      return t("search.conditionNew");
+    }
+
+    if (value === "USED") {
+      return t("search.conditionUsed");
+    }
+
+    return t("search.conditionRefurbished");
+  }
+
+
   function changePage(nextOffset: number) {
     setParams(
       compactParams({
@@ -427,18 +436,15 @@ export default function SearchPage() {
     <div className="page search-page">
       <div className="page-heading">
         <div>
-          <h1>Rechercher une annonce</h1>
-          <p>
-            Filtrez les annonces disponibles par prix, catégorie,
-            localisation et conditions de vente.
-          </p>
+          <h1>{t("search.title")}</h1>
+          <p>{t("search.subtitle")}</p>
         </div>
       </div>
 
       <form className="listing-search-form search-filter-panel" onSubmit={applyFilters}>
         <div className="listing-search-controls search-query-row">
           <label className="form-field search-query-field" htmlFor="listing-query">
-            <span>Que recherchez-vous ?</span>
+            <span>{t("search.what")}</span>
             <input
               id="listing-query"
               type="search"
@@ -447,19 +453,19 @@ export default function SearchPage() {
                 ...current,
                 q: event.target.value,
               }))}
-              placeholder="Téléphone, voiture, appartement..."
+              placeholder={t("search.placeholder")}
             />
           </label>
 
           <button type="submit" className="primary-button inline-button">
             <Search size={17} />
-            Rechercher
+            {t("search.apply")}
           </button>
         </div>
 
         <div className="search-filter-grid">
           <label className="form-field">
-            <span>Catégorie</span>
+            <span>{t("search.category")}</span>
             <select
               value={draft.category_id}
               disabled={filtersLoading}
@@ -468,7 +474,7 @@ export default function SearchPage() {
                 category_id: event.target.value,
               }))}
             >
-              <option value="">Toutes les catégories</option>
+              <option value="">{t("search.allCategories")}</option>
               {categories.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -478,7 +484,7 @@ export default function SearchPage() {
           </label>
 
           <label className="form-field">
-            <span>Localisation</span>
+            <span>{t("search.location")}</span>
             <select
               value={draft.administrative_area_id}
               disabled={filtersLoading}
@@ -487,7 +493,7 @@ export default function SearchPage() {
                 administrative_area_id: event.target.value,
               }))}
             >
-              <option value="">Tout le Burundi</option>
+              <option value="">{t("search.allBurundi")}</option>
               {locationOptions.map(area => (
                 <option key={area.id} value={area.id}>
                   {area.label}
@@ -497,7 +503,7 @@ export default function SearchPage() {
           </label>
 
           <label className="form-field">
-            <span>Prix minimum</span>
+            <span>{t("search.priceMin")}</span>
             <input
               type="number"
               min="0"
@@ -510,7 +516,7 @@ export default function SearchPage() {
           </label>
 
           <label className="form-field">
-            <span>Prix maximum</span>
+            <span>{t("search.priceMax")}</span>
             <input
               type="number"
               min="0"
@@ -523,7 +529,7 @@ export default function SearchPage() {
           </label>
 
           <label className="form-field">
-            <span>État</span>
+            <span>{t("search.condition")}</span>
             <select
               value={draft.condition}
               onChange={event => setDraft(current => ({
@@ -531,17 +537,17 @@ export default function SearchPage() {
                 condition: event.target.value,
               }))}
             >
-              <option value="">Tous les états</option>
+              <option value="">{t("search.allConditions")}</option>
               {conditions.map(item => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
+                <option key={item} value={item}>
+                  {getConditionLabel(item)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="form-field">
-            <span>Type de prix</span>
+            <span>{t("search.priceType")}</span>
             <select
               value={draft.price_type}
               onChange={event => setDraft(current => ({
@@ -549,14 +555,14 @@ export default function SearchPage() {
                 price_type: event.target.value,
               }))}
             >
-              <option value="">Tous</option>
-              <option value="FIXED">Prix fixe</option>
-              <option value="NEGOTIABLE">Négociable</option>
+              <option value="">{t("search.all")}</option>
+              <option value="FIXED">{t("search.fixedPrice")}</option>
+              <option value="NEGOTIABLE">{t("search.negotiable")}</option>
             </select>
           </label>
 
           <label className="form-field">
-            <span>Offres</span>
+            <span>{t("search.offers")}</span>
             <select
               value={draft.allow_offers}
               onChange={event => setDraft(current => ({
@@ -564,14 +570,14 @@ export default function SearchPage() {
                 allow_offers: event.target.value,
               }))}
             >
-              <option value="">Indifférent</option>
-              <option value="true">Offres acceptées</option>
-              <option value="false">Sans offres</option>
+              <option value="">{t("search.offersAny")}</option>
+              <option value="true">{t("search.offersAccepted")}</option>
+              <option value="false">{t("search.noOffers")}</option>
             </select>
           </label>
 
           <label className="form-field">
-            <span>Trier par</span>
+            <span>{t("search.sortBy")}</span>
             <select
               value={draft.sort}
               onChange={event => setDraft(current => ({
@@ -579,10 +585,10 @@ export default function SearchPage() {
                 sort: event.target.value,
               }))}
             >
-              <option value="newest">Plus récentes</option>
-              <option value="oldest">Plus anciennes</option>
-              <option value="price_asc">Prix croissant</option>
-              <option value="price_desc">Prix décroissant</option>
+              <option value="newest">{t("search.newest")}</option>
+              <option value="oldest">{t("search.oldest")}</option>
+              <option value="price_asc">{t("search.priceAsc")}</option>
+              <option value="price_desc">{t("search.priceDesc")}</option>
             </select>
           </label>
         </div>
@@ -590,7 +596,7 @@ export default function SearchPage() {
         <div className="search-filter-actions">
           <button type="submit" className="primary-button inline-button">
             <Filter size={17} />
-            Appliquer les filtres
+            {t("search.apply")}
           </button>
 
           <button
@@ -599,22 +605,22 @@ export default function SearchPage() {
             onClick={resetFilters}
           >
             <RotateCcw size={16} />
-            Réinitialiser
+            {t("search.reset")}
           </button>
         </div>
       </form>
 
       <section className="saved-search-panel">
         <div>
-          <strong>Alertes de recherche</strong>
-          <p>Enregistrez vos filtres pour les relancer rapidement.</p>
+          <strong>{t("search.savedTitle")}</strong>
+          <p>{t("search.savedText")}</p>
         </div>
 
         <div className="saved-search-create">
           <input
             value={savedSearchName}
             onChange={event => setSavedSearchName(event.target.value)}
-            placeholder={query ? `Alerte ${query}` : "Nom de la recherche"}
+            placeholder={query ? `${t("search.alertPrefix")} ${query}` : t("search.savedName")}
           />
           <button
             type="button"
@@ -623,7 +629,7 @@ export default function SearchPage() {
             onClick={() => void saveCurrentSearch()}
           >
             <BellPlus size={16} />
-            {savingSearch ? "Sauvegarde..." : "Sauvegarder"}
+            {savingSearch ? t("search.saving") : t("search.save")}
           </button>
         </div>
 
@@ -635,10 +641,10 @@ export default function SearchPage() {
               <div key={savedSearch.id} className="saved-search-item">
                 <button type="button" onClick={() => applySavedSearch(savedSearch)}>
                   <strong>{savedSearch.name}</strong>
-                  <span>{Object.keys(savedSearch.query_params).length} filtre(s)</span>
+                  <span>{Object.keys(savedSearch.query_params).length} {t("search.filtersCount")}</span>
                 </button>
                 <button type="button" className="text-button" onClick={() => void deleteSavedSearch(savedSearch)}>
-                  Supprimer
+                  {t("search.delete")}
                 </button>
               </div>
             ))}
@@ -647,14 +653,14 @@ export default function SearchPage() {
       </section>
 
       {loading && (
-        <p role="status">Chargement des annonces...</p>
+        <p role="status">{t("search.loading")}</p>
       )}
 
       {error && (
         <div role="alert" className="seller-error">
           <p>{error}</p>
           <button type="button" onClick={() => setAttempt(value => value + 1)}>
-            Réessayer
+            {t("search.retry")}
           </button>
         </div>
       )}
@@ -663,17 +669,17 @@ export default function SearchPage() {
         <>
           <div className="search-results-toolbar">
             <p role="status" className="search-result-count">
-              {results.total} annonce{results.total > 1 ? "s" : ""} trouvée{results.total > 1 ? "s" : ""}
+              {results.total} {t("search.resultsSuffix")}
             </p>
 
-            <div className="search-view-toggle" aria-label="Affichage des résultats">
+            <div className="search-view-toggle" aria-label={t("search.viewLabel")}>
               <button
                 type="button"
                 className={viewMode === "list" ? "search-view-toggle__item search-view-toggle__item--active" : "search-view-toggle__item"}
                 onClick={() => setViewMode("list")}
               >
                 <List size={16} />
-                Liste
+                {t("search.list")}
               </button>
               <button
                 type="button"
@@ -681,13 +687,13 @@ export default function SearchPage() {
                 onClick={() => setViewMode("map")}
               >
                 <Map size={16} />
-                Carte
+                {t("search.map")}
               </button>
             </div>
           </div>
 
           {results.items.length === 0 && (
-            <p>Aucune annonce ne correspond à votre recherche.</p>
+            <p>{t("search.empty")}</p>
           )}
 
           {viewMode === "map" ? (
@@ -701,13 +707,13 @@ export default function SearchPage() {
           )}
 
           {(offset > 0 || results.has_more) && (
-            <nav className="listing-search-pagination" aria-label="Pagination des annonces">
+            <nav className="listing-search-pagination" aria-label={t("search.pagination")}>
               <button
                 type="button"
                 disabled={offset === 0}
                 onClick={() => changePage(Math.max(0, offset - PAGE_SIZE))}
               >
-                Précédent
+                {t("search.previous")}
               </button>
 
               <button
@@ -715,7 +721,7 @@ export default function SearchPage() {
                 disabled={!results.has_more}
                 onClick={() => changePage(offset + PAGE_SIZE)}
               >
-                Suivant
+                {t("search.next")}
               </button>
             </nav>
           )}

@@ -13,6 +13,10 @@ from app.schemas.conversation import (
     InterestConversationResponse,
     MessageCreate,
     MessageResponse,
+    MeetupCancelCreate,
+    MeetupCreate,
+    MeetupResponseCreate,
+    MeetupUpdateCreate,
 )
 from app.services.conversation_service import ConversationService
 from app.models.user import User
@@ -123,6 +127,95 @@ async def send_message(
         content,
     )
 
+
+
+
+@router.post(
+    "/conversations/{conversation_id}/meetups",
+    response_model=MessageResponse,
+    status_code=201,
+)
+async def propose_meetup(
+    conversation_id: UUID,
+    data: MeetupCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.propose_meetup(
+        db,
+        conversation_id,
+        current_user.id,
+        scheduled_at=data.scheduled_at,
+        location_label=data.location_label,
+        instructions=data.instructions,
+    )
+
+
+
+@router.patch(
+    "/conversations/{conversation_id}/meetups/{meetup_message_id}",
+    response_model=MessageResponse,
+    status_code=201,
+)
+async def update_meetup(
+    conversation_id: UUID,
+    meetup_message_id: UUID,
+    data: MeetupUpdateCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.update_meetup(
+        db,
+        conversation_id,
+        meetup_message_id,
+        current_user.id,
+        scheduled_at=data.scheduled_at,
+        location_label=data.location_label,
+        instructions=data.instructions,
+    )
+
+
+@router.post(
+    "/conversations/{conversation_id}/meetups/{meetup_message_id}/cancel",
+    response_model=MessageResponse,
+    status_code=201,
+)
+async def cancel_meetup(
+    conversation_id: UUID,
+    meetup_message_id: UUID,
+    data: MeetupCancelCreate | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.cancel_meetup(
+        db,
+        conversation_id,
+        meetup_message_id,
+        current_user.id,
+        reason=data.reason if data else None,
+    )
+
+
+@router.post(
+    "/conversations/{conversation_id}/meetups/{meetup_message_id}/response",
+    response_model=MessageResponse,
+    status_code=201,
+)
+async def respond_to_meetup(
+    conversation_id: UUID,
+    meetup_message_id: UUID,
+    data: MeetupResponseCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await ConversationService.respond_to_meetup(
+        db,
+        conversation_id,
+        meetup_message_id,
+        current_user.id,
+        decision=data.decision,
+        note=data.note,
+    )
 
 @router.post(
     "/conversations/{conversation_id}/read",

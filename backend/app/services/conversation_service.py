@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -182,6 +183,7 @@ class ConversationService:
         conversation_id: UUID,
         sender_id: UUID,
         content: str,
+        message_type: str = "TEXT",
     ) -> Message:
 
         conversation = await ConversationService.get_user_conversation(
@@ -240,7 +242,7 @@ class ConversationService:
         message = Message(
             conversation_id=conversation_id,
             sender_id=sender_id,
-            message_type="TEXT",
+            message_type=message_type.upper(),
             content=content.strip(),
         )
 
@@ -282,6 +284,206 @@ class ConversationService:
         await db.refresh(message)
 
         return message
+
+
+    @staticmethod
+    async def propose_meetup(
+        db: AsyncSession,
+        conversation_id: UUID,
+        sender_id: UUID,
+        *,
+        scheduled_at,
+        location_label: str,
+        instructions: str | None = None,
+    ) -> Message:
+        payload = {
+            "scheduled_at": scheduled_at.isoformat(),
+            "location_label": location_label.strip(),
+            "instructions": instructions.strip() if instructions else None,
+        }
+
+        return await ConversationService.send_message(
+            db,
+            conversation_id,
+            sender_id,
+            json.dumps(payload, ensure_ascii=False),
+            message_type="MEETUP",
+        )
+
+
+
+    @staticmethod
+    async def update_meetup(
+        db: AsyncSession,
+        conversation_id: UUID,
+        meetup_message_id: UUID,
+        sender_id: UUID,
+        *,
+        scheduled_at=None,
+        location_label: str | None = None,
+        instructions: str | None = None,
+    ) -> Message:
+        conversation = await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            sender_id,
+        )
+
+        meetup_message = await db.get(Message, meetup_message_id)
+
+        if (
+            not meetup_message
+            or meetup_message.conversation_id != conversation.id
+            or meetup_message.message_type != "MEETUP"
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="Rendez-vous introuvable.",
+            )
+
+        if meetup_message.sender_id != sender_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Seul l'auteur peut modifier cette proposition.",
+            )
+
+        current_payload = json.loads(meetup_message.content)
+
+        payload = {
+            "meetup_message_id": str(meetup_message.id),
+            "scheduled_at": (
+                scheduled_at.isoformat()
+                if scheduled_at
+                else current_payload.get("scheduled_at")
+            ),
+            "location_label": (
+                location_label.strip()
+                if location_label is not None
+                else current_payload.get("location_label")
+            ),
+            "instructions": (
+                instructions.strip()
+                if instructions
+                else None
+            ),
+        }
+
+        if not payload["scheduled_at"] or not payload["location_label"]:
+            raise HTTPException(
+                status_code=422,
+                detail="Date et lieu de rendez-vous obligatoires.",
+            )
+
+        return await ConversationService.send_message(
+            db,
+            conversation_id,
+            sender_id,
+            json.dumps(payload, ensure_ascii=False),
+            message_type="MEETUP_UPDATE",
+        )
+
+
+    @staticmethod
+    async def cancel_meetup(
+        db: AsyncSession,
+        conversation_id: UUID,
+        meetup_message_id: UUID,
+        sender_id: UUID,
+        *,
+        reason: str | None = None,
+    ) -> Message:
+        conversation = await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            sender_id,
+        )
+
+        meetup_message = await db.get(Message, meetup_message_id)
+
+        if (
+            not meetup_message
+            or meetup_message.conversation_id != conversation.id
+            or meetup_message.message_type != "MEETUP"
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="Rendez-vous introuvable.",
+            )
+
+        if meetup_message.sender_id != sender_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Seul l'auteur peut annuler cette proposition.",
+            )
+
+        payload = {
+            "meetup_message_id": str(meetup_message.id),
+            "reason": reason.strip() if reason else None,
+        }
+
+        return await ConversationService.send_message(
+            db,
+            conversation_id,
+            sender_id,
+            json.dumps(payload, ensure_ascii=False),
+            message_type="MEETUP_CANCELLED",
+        )
+
+    @staticmethod
+    async def respond_to_meetup(
+        db: AsyncSession,
+        conversation_id: UUID,
+        meetup_message_id: UUID,
+        sender_id: UUID,
+        *,
+        decision: str,
+        note: str | None = None,
+    ) -> Message:
+        conversation = await ConversationService.get_user_conversation(
+            db,
+            conversation_id,
+            sender_id,
+        )
+
+        meetup_message = await db.get(Message, meetup_message_id)
+
+        if (
+            not meetup_message
+            or meetup_message.conversation_id != conversation.id
+            or meetup_message.message_type != "MEETUP"
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="Rendez-vous introuvable.",
+            )
+
+        if meetup_message.sender_id == sender_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Vous ne pouvez pas répondre à votre propre proposition.",
+            )
+
+        normalized = decision.strip().upper()
+
+        if normalized not in {"ACCEPTED", "REJECTED"}:
+            raise HTTPException(
+                status_code=422,
+                detail="Décision de rendez-vous invalide.",
+            )
+
+        payload = {
+            "meetup_message_id": str(meetup_message.id),
+            "decision": normalized,
+            "note": note.strip() if note else None,
+        }
+
+        return await ConversationService.send_message(
+            db,
+            conversation_id,
+            sender_id,
+            json.dumps(payload, ensure_ascii=False),
+            message_type="MEETUP_RESPONSE",
+        )
 
     @staticmethod
     async def get_messages(

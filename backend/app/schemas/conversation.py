@@ -24,6 +24,49 @@ class MessageCreate(BaseModel):
     )
 
 
+class MeetupCreate(BaseModel):
+    scheduled_at: datetime
+    location_label: str = Field(
+        min_length=3,
+        max_length=200,
+    )
+    instructions: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+class MeetupUpdateCreate(BaseModel):
+    scheduled_at: datetime | None = None
+    location_label: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=200,
+    )
+    instructions: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+class MeetupCancelCreate(BaseModel):
+    reason: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+class MeetupResponseCreate(BaseModel):
+    decision: str = Field(
+        min_length=3,
+        max_length=20,
+    )
+    note: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
 class MessageResponse(BaseModel):
     id: UUID
     conversation_id: UUID

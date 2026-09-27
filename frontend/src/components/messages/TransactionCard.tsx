@@ -18,6 +18,7 @@ type TransactionCardProps = {
     currentUserId: string;
     loading?: boolean;
     onConfirm: () => void;
+    onDeliveryChanged?: () => void;
 };
 
 function formatMoney(
@@ -36,6 +37,7 @@ export default function TransactionCard({
     currentUserId,
     loading = false,
     onConfirm,
+    onDeliveryChanged,
 }: TransactionCardProps) {
     const [reviewRating, setReviewRating] =
         useState(5);
@@ -50,6 +52,27 @@ export default function TransactionCard({
         useState(false);
 
     const [reviewError, setReviewError] =
+        useState("");
+
+    const [deliveryOpen, setDeliveryOpen] =
+        useState(false);
+
+    const [pickupAddress, setPickupAddress] =
+        useState("");
+
+    const [dropoffAddress, setDropoffAddress] =
+        useState("");
+
+    const [carrierName, setCarrierName] =
+        useState("");
+
+    const [deliveryFee, setDeliveryFee] =
+        useState("0");
+
+    const [deliveryLoading, setDeliveryLoading] =
+        useState(false);
+
+    const [deliveryError, setDeliveryError] =
         useState("");
 
     const isBuyer =
@@ -74,6 +97,73 @@ export default function TransactionCard({
         isBuyer
             ? buyerConfirmed
             : sellerConfirmed;
+
+
+    async function createDelivery(event: FormEvent) {
+        event.preventDefault();
+        setDeliveryLoading(true);
+        setDeliveryError("");
+
+        try {
+            await apiRequest(
+                `/transactions/${transaction.id}/delivery`,
+                {
+                    method: "POST",
+                    authenticated: true,
+                    body: JSON.stringify({
+                        pickup_address: pickupAddress.trim(),
+                        dropoff_address: dropoffAddress.trim(),
+                        carrier_name: carrierName.trim() || null,
+                        fee_amount: deliveryFee || "0",
+                        currency: transaction.currency,
+                    }),
+                },
+            );
+            setDeliveryOpen(false);
+            onDeliveryChanged?.();
+        } catch (cause) {
+            setDeliveryError(
+                cause instanceof Error
+                    ? cause.message
+                    : "Impossible de créer la livraison.",
+            );
+        } finally {
+            setDeliveryLoading(false);
+        }
+    }
+
+    async function deliveryAction(action: "accept" | "pickup" | "deliver" | "cancel" | "dispute") {
+        setDeliveryLoading(true);
+        setDeliveryError("");
+
+        const body = action === "pickup"
+            ? JSON.stringify({ tracking_reference: window.prompt("Référence de suivi ?") || null })
+            : action === "deliver"
+                ? JSON.stringify({ proof_url: window.prompt("Lien de preuve de livraison ?") || null })
+                : action === "dispute"
+                    ? JSON.stringify({ reason: window.prompt("Pourquoi contestez-vous cette livraison ?") || "Litige livraison" })
+                    : undefined;
+
+        try {
+            await apiRequest(
+                `/transactions/${transaction.id}/delivery/${action}`,
+                {
+                    method: "POST",
+                    authenticated: true,
+                    body,
+                },
+            );
+            onDeliveryChanged?.();
+        } catch (cause) {
+            setDeliveryError(
+                cause instanceof Error
+                    ? cause.message
+                    : "Action livraison impossible.",
+            );
+        } finally {
+            setDeliveryLoading(false);
+        }
+    }
 
     async function submitReview(event: FormEvent) {
         event.preventDefault();
@@ -181,6 +271,94 @@ export default function TransactionCard({
                                     : "Confirmer"}
                     </button>
                 )}
+
+
+            <section className="transaction-delivery">
+                <div className="transaction-card__header">
+                    <strong>Livraison</strong>
+                    {transaction.delivery && (
+                        <span className={`transaction-card__status transaction-card__status--${transaction.delivery.status.toLowerCase()}`}>
+                            {transaction.delivery.status}
+                        </span>
+                    )}
+                </div>
+
+                {!transaction.delivery && !cancelled && (
+                    <>
+                        <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            onClick={() => setDeliveryOpen(value => !value)}
+                        >
+                            {deliveryOpen ? "Fermer" : "Demander une livraison"}
+                        </button>
+
+                        {deliveryOpen && (
+                            <form className="transaction-review-form" onSubmit={createDelivery}>
+                                <input
+                                    value={pickupAddress}
+                                    onChange={event => setPickupAddress(event.target.value)}
+                                    placeholder="Adresse de prise en charge"
+                                    required
+                                />
+                                <input
+                                    value={dropoffAddress}
+                                    onChange={event => setDropoffAddress(event.target.value)}
+                                    placeholder="Adresse de livraison"
+                                    required
+                                />
+                                <input
+                                    value={carrierName}
+                                    onChange={event => setCarrierName(event.target.value)}
+                                    placeholder="Transporteur ou contact"
+                                />
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={deliveryFee}
+                                    onChange={event => setDeliveryFee(event.target.value)}
+                                    placeholder="Frais"
+                                />
+                                <button type="submit" className="transaction-card__confirm-button" disabled={deliveryLoading}>
+                                    {deliveryLoading ? "Création..." : "Créer la livraison"}
+                                </button>
+                            </form>
+                        )}
+                    </>
+                )}
+
+                {transaction.delivery && (
+                    <div className="transaction-delivery__details">
+                        <p><strong>Départ</strong> {transaction.delivery.pickup_address}</p>
+                        <p><strong>Arrivée</strong> {transaction.delivery.dropoff_address}</p>
+                        <p><strong>Frais</strong> {formatMoney(transaction.delivery.fee_amount, transaction.delivery.currency)}</p>
+                        {transaction.delivery.carrier_name && <p><strong>Transporteur</strong> {transaction.delivery.carrier_name}</p>}
+                        {transaction.delivery.tracking_reference && <p><strong>Suivi</strong> {transaction.delivery.tracking_reference}</p>}
+                        {transaction.delivery.proof_url && <p><strong>Preuve</strong> {transaction.delivery.proof_url}</p>}
+                        {transaction.delivery.dispute_reason && <p><strong>Litige</strong> {transaction.delivery.dispute_reason}</p>}
+
+                        <div className="meetup-response-actions">
+                            {isSeller && transaction.delivery.status === "REQUESTED" && (
+                                <button type="button" className="secondary-button inline-button" disabled={deliveryLoading} onClick={() => void deliveryAction("accept")}>Accepter</button>
+                            )}
+                            {isSeller && ["REQUESTED", "ACCEPTED"].includes(transaction.delivery.status) && (
+                                <button type="button" className="secondary-button inline-button" disabled={deliveryLoading} onClick={() => void deliveryAction("pickup")}>En cours</button>
+                            )}
+                            {isBuyer && ["IN_TRANSIT", "ACCEPTED"].includes(transaction.delivery.status) && (
+                                <button type="button" className="primary-button inline-button" disabled={deliveryLoading} onClick={() => void deliveryAction("deliver")}>Reçu</button>
+                            )}
+                            {! ["DELIVERED", "CANCELLED"].includes(transaction.delivery.status) && (
+                                <button type="button" className="secondary-button inline-button" disabled={deliveryLoading} onClick={() => void deliveryAction("dispute")}>Litige</button>
+                            )}
+                            {! ["DELIVERED", "CANCELLED"].includes(transaction.delivery.status) && (
+                                <button type="button" className="secondary-button inline-button" disabled={deliveryLoading} onClick={() => void deliveryAction("cancel")}>Annuler</button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {deliveryError && <p className="form-error" role="alert">{deliveryError}</p>}
+            </section>
 
             {completed && !reviewSent && (
                 <form className="transaction-review-form" onSubmit={submitReview}>

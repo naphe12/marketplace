@@ -19,6 +19,10 @@ import {
   useAuth,
 } from "../auth/AuthContext";
 
+import {
+  useI18n,
+} from "../i18n/I18nProvider";
+
 
 type AuthMode = "login" | "register";
 
@@ -31,6 +35,8 @@ export default function LoginPage() {
     login,
     register,
   } = useAuth();
+
+  const { t } = useI18n();
 
   const [mode, setMode] =
     useState<AuthMode>("login");
@@ -104,8 +110,8 @@ export default function LoginPage() {
         err instanceof Error
           ? err.message
           : mode === "register"
-            ? "Inscription impossible."
-            : "Connexion impossible.",
+            ? t("auth.registerError")
+            : t("auth.loginError"),
       );
     } finally {
       setLoading(false);
@@ -119,14 +125,14 @@ export default function LoginPage() {
         className="auth-card"
         onSubmit={submit}
       >
-        <div className="auth-mode-switch" role="tablist" aria-label="Mode d'authentification">
+        <div className="auth-mode-switch" role="tablist" aria-label={`${t("auth.login")} / ${t("auth.register")}`}>
           <button
             type="button"
             className={mode === "login" ? "auth-mode-switch__item auth-mode-switch__item--active" : "auth-mode-switch__item"}
             onClick={() => setMode("login")}
           >
             <LogIn size={16} />
-            Connexion
+            {t("auth.login")}
           </button>
 
           <button
@@ -135,16 +141,16 @@ export default function LoginPage() {
             onClick={() => setMode("register")}
           >
             <UserPlus size={16} />
-            Inscription
+            {t("auth.register")}
           </button>
         </div>
 
-        <h1>{mode === "register" ? "Créer un compte" : "Connexion"}</h1>
+        <h1>{mode === "register" ? t("auth.createAccount") : t("auth.login")}</h1>
 
         {mode === "register" && (
           <div className="auth-grid-two">
             <label>
-              Prénom
+              {t("auth.firstName")}
               <input
                 value={firstName}
                 onChange={event => setFirstName(event.target.value)}
@@ -153,7 +159,7 @@ export default function LoginPage() {
             </label>
 
             <label>
-              Nom
+              {t("auth.lastName")}
               <input
                 value={lastName}
                 onChange={event => setLastName(event.target.value)}
@@ -164,7 +170,7 @@ export default function LoginPage() {
         )}
 
         <label>
-          Téléphone
+          {t("auth.phone")}
 
           <input
             type="tel"
@@ -182,19 +188,19 @@ export default function LoginPage() {
 
         {mode === "register" && (
           <label>
-            Email
+            {t("auth.email")}
             <input
               type="email"
               value={email}
               onChange={event => setEmail(event.target.value)}
-              placeholder="optionnel"
+              placeholder={t("auth.optional")}
               autoComplete="email"
             />
           </label>
         )}
 
         <label>
-          Mot de passe
+          {t("auth.password")}
 
           <input
             type="password"
@@ -212,15 +218,13 @@ export default function LoginPage() {
 
         {mode === "register" && (
           <p className="auth-hint">
-            Votre mot de passe doit contenir au moins 8 caractères.
-            La vérification téléphone pourra être finalisée depuis votre compte
-            dès que le flux SMS sera activé.
+            {t("auth.registerHint")}
           </p>
         )}
 
         {mode === "login" && (
           <p className="auth-hint">
-            Mot de passe oublié : le backend n'expose pas encore de récupération automatique.
+            {t("auth.forgotHint")}
           </p>
         )}
 
@@ -237,26 +241,25 @@ export default function LoginPage() {
           {mode === "register" ? <UserPlus size={17} /> : <LogIn size={17} />}
           {loading
             ? mode === "register"
-              ? "Création..."
-              : "Connexion..."
+              ? t("auth.creating")
+              : t("auth.signingIn")
             : mode === "register"
-              ? "Créer mon compte"
-              : "Se connecter"}
+              ? t("auth.createMyAccount")
+              : t("auth.signIn")}
         </button>
       </form>
 
       <aside className="auth-onboarding-card">
         <Store size={24} />
-        <h2>Vendre sur MarketBI</h2>
+        <h2>{t("auth.sellerTitle")}</h2>
         <p>
-          Créez un compte, publiez une annonce, ajoutez vos photos,
-          choisissez la localisation et suivez vos échanges depuis la messagerie.
+          {t("auth.sellerText")}
         </p>
 
         <ul>
-          <li><CheckCircle2 size={16} /> Brouillons sauvegardés automatiquement</li>
-          <li><CheckCircle2 size={16} /> Offres et transactions suivies dans les messages</li>
-          <li><CheckCircle2 size={16} /> Réputation construite après les ventes terminées</li>
+          <li><CheckCircle2 size={16} /> {t("auth.bulletDrafts")}</li>
+          <li><CheckCircle2 size={16} /> {t("auth.bulletOffers")}</li>
+          <li><CheckCircle2 size={16} /> {t("auth.bulletReputation")}</li>
         </ul>
       </aside>
     </div>

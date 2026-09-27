@@ -28,6 +28,10 @@ import {
 } from "../api/client";
 
 import {
+  useI18n,
+} from "../i18n/I18nProvider";
+
+import {
   useListingAutosave,
 } from "../hooks/useListingAutosave";
 
@@ -208,6 +212,7 @@ function PublishEditor({
 }: {
   resumeId?: string;
 }) {
+  const { t } = useI18n();
   const navigate =
     useNavigate();
 
@@ -320,7 +325,7 @@ function PublishEditor({
 
 
   // -----------------------------
-  // Localisation
+  // {t("publish.reviewLocation")}
   // -----------------------------
 
   const [
@@ -515,7 +520,7 @@ function PublishEditor({
         setError(
           error instanceof Error
             ? error.message
-            : "Impossible de charger les catégories.",
+            : t("publish.categoriesError"),
         );
       });
   }, []);
@@ -556,7 +561,7 @@ function PublishEditor({
           "DRAFT"
         ) {
           throw new Error(
-            "Cette annonce n’est plus un brouillon.",
+            t("publish.draftNotDraft"),
           );
         }
 
@@ -787,7 +792,7 @@ function PublishEditor({
           setRestoreError(
             error instanceof Error
               ? error.message
-              : "Impossible de charger le brouillon.",
+              : t("publish.draftLoadError"),
           );
         }
       } finally {
@@ -979,7 +984,7 @@ function PublishEditor({
       setError(
         error instanceof Error
           ? error.message
-          : "Impossible de préparer le brouillon.",
+          : t("publish.prepareDraftError"),
       );
     } finally {
       choosingCategory.current =
@@ -1036,7 +1041,7 @@ function PublishEditor({
       setError(
         error instanceof Error
           ? error.message
-          : "Impossible d’enregistrer l’annonce. Réessayez.",
+          : t("publish.saveError"),
       );
     } finally {
       setSaving(false);
@@ -1138,7 +1143,7 @@ function PublishEditor({
       setError(
         error instanceof Error
           ? error.message
-          : "Impossible d’enregistrer l’annonce. Réessayez.",
+          : t("publish.saveError"),
       );
     } finally {
       setSaving(false);
@@ -1152,7 +1157,7 @@ function PublishEditor({
         className="page"
         role="status"
       >
-        Chargement du brouillon…
+        {t("publish.loadingDraft")}
       </div>
     );
   }
@@ -1173,7 +1178,7 @@ function PublishEditor({
             )
           }
         >
-          Mes brouillons
+          {t("publish.myDrafts")}
         </button>
       </div>
     );
@@ -1321,19 +1326,18 @@ function PublishEditor({
 
             <div className="publish-panel__heading">
               <h1>
-                Vérifiez votre annonce
+                {t("publish.reviewTitle")}
               </h1>
 
               <p>
-                Relisez les informations
-                avant de publier.
+                {t("publish.reviewText")}
               </p>
             </div>
 
 
             <div className="review-card">
               <span>
-                Catégorie
+                {t("publish.reviewCategory")}
               </span>
 
               <strong>
@@ -1347,7 +1351,7 @@ function PublishEditor({
 
             <div className="review-card">
               <span>
-                Titre
+                {t("publish.reviewTitleLabel")}
               </span>
 
               <strong>
@@ -1358,7 +1362,7 @@ function PublishEditor({
 
             <div className="review-card">
               <span>
-                Prix
+                {t("publish.reviewPrice")}
               </span>
 
               <strong>
@@ -1370,16 +1374,16 @@ function PublishEditor({
 
             <div className="review-card">
               <span>
-                Localisation
+                {t("publish.reviewLocation")}
               </span>
 
               <strong>
                 {localityId
-                  ? "Quartier / Colline sélectionné"
+                  ? t("publish.localitySelected")
                   : zoneId
-                    ? "Zone sélectionnée"
+                    ? t("publish.zoneSelected")
                     : communeId
-                      ? "Commune sélectionnée"
+                      ? t("publish.communeSelected")
                       : "—"}
               </strong>
             </div>
@@ -1417,7 +1421,7 @@ function PublishEditor({
                 )
               }
             >
-              Retour
+              {t("publish.back")}
             </button>
           )}
 
@@ -1440,8 +1444,8 @@ function PublishEditor({
               }
             >
               {saving
-                ? "Enregistrement..."
-                : "Continuer"}
+                ? t("publish.saving")
+                : t("publish.continue")}
             </button>
           )}
 
@@ -1456,7 +1460,7 @@ function PublishEditor({
                 setStep(4)
               }
             >
-              Continuer
+              {t("publish.continue")}
             </button>
           )}
 
@@ -1477,7 +1481,7 @@ function PublishEditor({
                 savePrice
               }
             >
-              Continuer
+              {t("publish.continue")}
             </button>
           )}
 
@@ -1524,7 +1528,7 @@ function PublishEditor({
                   }
                 }
               >
-                Publier l'annonce
+                {t("publish.publishListing")}
               </button>
             )}
 

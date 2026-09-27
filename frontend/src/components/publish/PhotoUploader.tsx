@@ -14,6 +14,9 @@ import {
   apiRequest,
 } from "../../api/client";
 import {
+  useI18n,
+} from "../../i18n/I18nProvider";
+import {
   uploadListingImage,
 } from "../../api/uploads";
 import type {
@@ -33,6 +36,7 @@ export default function PhotoUploader({
   initialImages = [],
   onChange,
 }: Props) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const busyRef = useRef(false);
   const [photos, setPhotos] = useState(initialImages);
@@ -63,7 +67,7 @@ export default function PhotoUploader({
       setError(
         cause instanceof Error
           ? cause.message
-          : "Impossible de modifier les photos.",
+          : t("publish.photosError"),
       );
     } finally {
       busyRef.current = false;
@@ -85,7 +89,7 @@ export default function PhotoUploader({
           file.size > 8 * 1024 * 1024
         ) {
           throw new Error(
-            "Utilisez une photo JPEG, PNG ou WebP de 8 MB maximum.",
+            t("publish.photosInvalid"),
           );
         }
 
@@ -214,13 +218,11 @@ export default function PhotoUploader({
   const sortedPhotos = orderedPhotos();
 
   return (
-    <section className="publish-panel" aria-label="Gérer les photos">
+    <section className="publish-panel" aria-label={t("publish.photosAria")}>
       <div className="publish-panel__heading">
-        <h2>Photos de l’annonce</h2>
+        <h2>{t("publish.photosTitle")}</h2>
         <p>
-          Ajoutez, supprimez, réordonnez vos photos et choisissez
-          l’image principale. Les changements sont enregistrés
-          immédiatement.
+          {t("publish.photosText")}
         </p>
       </div>
 
@@ -245,12 +247,12 @@ export default function PhotoUploader({
         onClick={() => inputRef.current?.click()}
       >
         <Camera size={25} />
-        <span>Ajouter des photos - JPEG, PNG ou WebP · 8 MB max</span>
+        <span>{t("publish.photosAdd")}</span>
       </button>
 
       {busy && (
         <p role="status">
-          Enregistrement des photos...
+          {t("publish.photosSaving")}
         </p>
       )}
 
@@ -266,7 +268,7 @@ export default function PhotoUploader({
             <div className="photo-item">
               <img
                 src={photo.thumbnail_url ?? photo.image_url}
-                alt={`Photo ${index + 1}`}
+                alt={`${t("publish.photoAlt")} ${index + 1}`}
               />
 
               <button
@@ -282,8 +284,8 @@ export default function PhotoUploader({
                 <Star size={12} />
                 <span>
                   {photo.is_primary
-                    ? "Principale"
-                    : "Définir principale"}
+                    ? t("publish.photoPrimary")
+                    : t("publish.photoSetPrimary")}
                 </span>
               </button>
             </div>
@@ -292,7 +294,7 @@ export default function PhotoUploader({
               <button
                 type="button"
                 disabled={busy || index === 0}
-                aria-label={`Déplacer la photo ${index + 1} vers la gauche`}
+                aria-label={`${t("publish.photoMoveLeft")} ${index + 1}`}
                 onClick={() => void moveImage(photo.id, -1)}
               >
                 <ArrowLeft size={16} />
@@ -301,7 +303,7 @@ export default function PhotoUploader({
               <button
                 type="button"
                 disabled={busy || index === sortedPhotos.length - 1}
-                aria-label={`Déplacer la photo ${index + 1} vers la droite`}
+                aria-label={`${t("publish.photoMoveRight")} ${index + 1}`}
                 onClick={() => void moveImage(photo.id, 1)}
               >
                 <ArrowRight size={16} />
@@ -311,7 +313,7 @@ export default function PhotoUploader({
                 type="button"
                 className="photo-action-danger"
                 disabled={busy}
-                aria-label={`Supprimer la photo ${index + 1}`}
+                aria-label={`${t("publish.photoDelete")} ${index + 1}`}
                 onClick={() => void deleteImage(photo.id)}
               >
                 <Trash2 size={16} />
@@ -322,7 +324,7 @@ export default function PhotoUploader({
       </div>
 
       <div className="photo-counter">
-        {photos.length} / 8 photos
+        {photos.length} / 8 {t("publish.photosCount")}
       </div>
     </section>
   );

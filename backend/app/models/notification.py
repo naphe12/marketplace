@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    JSON,
     Index,
     text,
     String,
@@ -62,7 +63,10 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         nullable=True,
     )
 
-    
+    data: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
 
     channel: Mapped[str] = mapped_column(
         String(20),

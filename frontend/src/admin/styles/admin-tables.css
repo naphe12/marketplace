@@ -885,3 +885,32 @@
     min-width: 780px;
   }
 }
+
+
+.admin-filters--advanced {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  width: 100%;
+}
+
+.admin-filters--advanced label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-filters--advanced label input {
+  width: 100%;
+}
+
+.admin-filters--advanced .secondary-button {
+  min-height: 42px;
+}
+
+@media (min-width: 1180px) {
+  .admin-filters--advanced {
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+  }
+}

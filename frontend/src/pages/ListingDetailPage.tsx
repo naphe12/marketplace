@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n/I18nProvider";
 import PhotoUploader from "../components/publish/PhotoUploader";
 import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
@@ -27,6 +28,7 @@ function parseCoordinate(
 
 
 export default function ListingDetailPage() {
+  const { t } = useI18n();
   const { listingId } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -145,7 +147,7 @@ export default function ListingDetailPage() {
           setError(
             error instanceof Error
               ? error.message
-              : "Impossible de charger l’annonce.",
+              : t("listing.loadError"),
           );
         }
       })
@@ -169,9 +171,9 @@ export default function ListingDetailPage() {
   const publicLongitude = parseCoordinate(listing?.longitude, 180);
 
   const conditions: Record<string, string> = {
-    NEW: "Neuf",
-    USED: "Occasion",
-    REFURBISHED: "Reconditionné",
+    NEW: t("publish.conditionNew"),
+    USED: t("publish.conditionUsed"),
+    REFURBISHED: t("publish.conditionRefurbished"),
   };
 
   /*
@@ -218,7 +220,7 @@ export default function ListingDetailPage() {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Impossible de contacter le vendeur.",
+          : t("listing.contactError"),
       );
     } finally {
       setInterestLoading(false);
@@ -240,7 +242,7 @@ export default function ListingDetailPage() {
       amount <= 0
     ) {
       setOfferError(
-        "Veuillez saisir un montant valide.",
+        t("listing.invalidOffer"),
       );
       return;
     }
@@ -272,7 +274,7 @@ export default function ListingDetailPage() {
       setOfferError(
         cause instanceof Error
           ? cause.message
-          : "Impossible d'envoyer l'offre.",
+          : t("listing.offerError"),
       );
     } finally {
       setOfferLoading(false);
@@ -280,7 +282,7 @@ export default function ListingDetailPage() {
   }
 
   /*
-   * 3. Continuer sans offre
+   * 3. {t("listing.continueWithoutOffer")}
    */
   function handleContinueWithoutOffer() {
     if (!conversationId) {
@@ -341,7 +343,7 @@ export default function ListingDetailPage() {
       setReportError(
         cause instanceof Error
           ? cause.message
-          : "Impossible d'envoyer le signalement.",
+          : t("listing.reportError"),
       );
     } finally {
       setReportLoading(false);
@@ -352,7 +354,7 @@ export default function ListingDetailPage() {
     if (!listing || !shareUrl) return;
 
     const title = listing.title;
-    const text = `Regarde cette annonce sur MarketBI : ${listing.title}`;
+    const text = `${t("listing.shareText")} ${listing.title}`;
 
     try {
       if (navigator.share) {
@@ -361,18 +363,18 @@ export default function ListingDetailPage() {
           text,
           url: shareUrl,
         });
-        setShareStatus("Lien prêt à partager.");
+        setShareStatus(t("listing.shareReady"));
         return;
       }
 
       await navigator.clipboard.writeText(shareUrl);
-      setShareStatus("Lien copié. Vous pouvez le coller dans WhatsApp ou ailleurs.");
+      setShareStatus(t("listing.shareCopied"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
       }
 
-      setShareStatus("Impossible de partager automatiquement. Copiez le lien depuis la barre d’adresse.");
+      setShareStatus(t("listing.shareError"));
     }
   }
 
@@ -398,12 +400,12 @@ export default function ListingDetailPage() {
         to="/"
         className="listing-detail__back"
       >
-        ← Retour aux annonces
+        ← {t("listing.back")}
       </Link>
 
       {loading && (
         <p role="status">
-          Chargement de l’annonce…
+          {t("listing.loading")}
         </p>
       )}
 
@@ -421,7 +423,7 @@ export default function ListingDetailPage() {
               setAttempt(value => value + 1)
             }
           >
-            Réessayer
+            {t("listing.retry")}
           </button>
         </div>
       )}
@@ -434,7 +436,7 @@ export default function ListingDetailPage() {
             onClick={() => void shareListing()}
           >
             <Share2 size={17} />
-            Partager
+            {t("listing.share")}
           </button>
 
           {shareStatus && (
@@ -445,7 +447,7 @@ export default function ListingDetailPage() {
 
           {authLoading ? (
             <p role="status">
-              Vérification de la connexion…
+              {t("listing.authCheck")}
             </p>
           ) : !user ? (
             <Link
@@ -454,7 +456,7 @@ export default function ListingDetailPage() {
                 `/listings/${listing.id}`,
               )}`}
             >
-              Se connecter pour modifier son annonce
+              {t("listing.loginToEdit")}
             </Link>
           ) : user.id === listing.seller_id ? (
             <button
@@ -486,8 +488,8 @@ export default function ListingDetailPage() {
               }}
             >
               {editing
-                ? "Modification en cours"
-                : "Modifier l’annonce"}
+                ? t("listing.editing")
+                : t("listing.edit")}
             </button>
           ) : (
             <div className="listing-detail__buyer-actions">
@@ -500,8 +502,8 @@ export default function ListingDetailPage() {
                 }
               >
                 {interestLoading
-                  ? "Ouverture..."
-                  : "Je suis intéressé"}
+                  ? t("listing.opening")
+                  : t("listing.interested")}
               </button>
 
               <button
@@ -512,7 +514,7 @@ export default function ListingDetailPage() {
                   setReportOpen(true);
                 }}
               >
-                Signaler l'annonce
+                {t("listing.reportListing")}
               </button>
               <button
                 type="button"
@@ -522,7 +524,7 @@ export default function ListingDetailPage() {
                   setReportOpen(true);
                 }}
               >
-                Signaler le vendeur
+                {t("listing.reportSeller")}
               </button>
             </div>
           )}
@@ -540,7 +542,7 @@ export default function ListingDetailPage() {
                 />
               ) : (
                 <p>
-                  Aucune photo disponible
+                  {t("listing.noPhoto")}
                 </p>
               )}
             </div>
@@ -548,16 +550,14 @@ export default function ListingDetailPage() {
             {images.length > 1 && (
               <div
                 className="listing-detail__thumbnails"
-                aria-label="Photos de l’annonce"
+                aria-label={t("listing.photosAria")}
               >
                 {images.map(
                   (image, index) => (
                     <button
                       key={image.id}
                       type="button"
-                      aria-label={`Voir la photo ${
-                        index + 1
-                      }`}
+                      aria-label={`${t("listing.viewPhoto")} ${index + 1}`}
                       aria-pressed={
                         photo?.id === image.id
                       }
@@ -587,30 +587,29 @@ export default function ListingDetailPage() {
 
             {saved && (
               <p role="status">
-                Les modifications ont été
-                enregistrées.
+                {t("listing.saved")}
               </p>
             )}
 
 
             {sellerReputation && (
-              <section className="seller-reputation-card" aria-label="Réputation vendeur">
+              <section className="seller-reputation-card" aria-label={t("listing.seller")}>
                 <div>
-                  <span>Vendeur</span>
+                  <span>{t("listing.seller")}</span>
                   <strong>
                     {sellerReputation.average_rating
                       ? `${Number(sellerReputation.average_rating).toFixed(1)} / 5`
-                      : "Pas encore noté"}
+                      : t("listing.notRated")}
                   </strong>
                   <small>
-                    {sellerReputation.review_count} avis · {sellerReputation.completed_as_seller} vente{sellerReputation.completed_as_seller > 1 ? "s" : ""} terminée{sellerReputation.completed_as_seller > 1 ? "s" : ""}
+                    {sellerReputation.review_count} {t("listing.reviews")} · {sellerReputation.completed_as_seller} {t("listing.salesDone")}
                   </small>
                 </div>
 
                 <div className="seller-trust-badges">
                   <span>{sellerReputation.trust_level}</span>
-                  {sellerReputation.phone_verified && <span>Téléphone vérifié</span>}
-                  {sellerReputation.identity_verified && <span>Identité vérifiée</span>}
+                  {sellerReputation.phone_verified && <span>{t("listing.phoneVerified")}</span>}
+                  {sellerReputation.identity_verified && <span>{t("listing.identityVerified")}</span>}
                 </div>
 
                 {sellerReviews.length > 0 && (
@@ -618,7 +617,7 @@ export default function ListingDetailPage() {
                     {sellerReviews.map(review => (
                       <blockquote key={review.id}>
                         <strong>{review.rating}/5</strong>
-                        <p>{review.comment ?? "Avis sans commentaire."}</p>
+                        <p>{review.comment ?? t("listing.emptyReview")}</p>
                       </blockquote>
                     ))}
                   </div>
@@ -680,7 +679,7 @@ export default function ListingDetailPage() {
 
             <p className="listing-detail__price">
               {listing.price === null
-                ? "Prix sur demande"
+                ? t("listing.priceOnRequest")
                 : `${new Intl.NumberFormat(
                     "fr-BI",
                     {
@@ -694,14 +693,14 @@ export default function ListingDetailPage() {
             {listing.price_type ===
               "NEGOTIABLE" && (
               <p className="negotiable">
-                Prix négociable
+                {t("listing.negotiablePrice")}
               </p>
             )}
 
             <dl className="listing-detail__facts">
               {listing.condition && (
                 <div>
-                  <dt>État</dt>
+                  <dt>{t("listing.condition")}</dt>
                   <dd>
                     {conditions[
                       listing.condition
@@ -712,22 +711,22 @@ export default function ListingDetailPage() {
               )}
 
               <div>
-                <dt>Quantité</dt>
+                <dt>{t("listing.quantity")}</dt>
                 <dd>{listing.quantity}</dd>
               </div>
 
               <div>
-                <dt>Offres</dt>
+                <dt>{t("listing.offers")}</dt>
                 <dd>
                   {listing.allow_offers
-                    ? "Acceptées"
-                    : "Non acceptées"}
+                    ? t("listing.accepted")
+                    : t("listing.notAccepted")}
                 </dd>
               </div>
 
               {listing.published_at && (
                 <div>
-                  <dt>Publication</dt>
+                  <dt>{t("listing.publication")}</dt>
                   <dd>
                     {new Date(
                       listing.published_at,
@@ -739,17 +738,17 @@ export default function ListingDetailPage() {
               )}
             </dl>
 
-            <h2>Description</h2>
+            <h2>{t("listing.description")}</h2>
 
             <p className="listing-detail__description">
               {listing.description ||
-                "Aucune description renseignée."}
+                t("listing.noDescription")}
             </p>
 
             {publicLatitude !== null && publicLongitude !== null && (
-              <section className="listing-detail__location" aria-label="Localisation approximative">
-                <h2>Localisation approximative</h2>
-                <p>La zone indiquée est indicative. Contactez le vendeur pour convenir d'un lieu de rencontre.</p>
+              <section className="listing-detail__location" aria-label={t("listing.approxLocation")}>
+                <h2>{t("listing.approxLocation")}</h2>
+                <p>{t("listing.approxLocationText")}</p>
                 <ApproximateLocationMap
                   latitude={publicLatitude}
                   longitude={publicLongitude}
@@ -776,18 +775,18 @@ export default function ListingDetailPage() {
               type="button"
               className="offer-modal__close"
               onClick={() => setReportOpen(false)}
-              aria-label="Fermer"
+              aria-label={t("listing.close")}
             >
               ×
             </button>
 
-            <h2 id="report-modal-title">{reportTargetType === "USER" ? "Signaler ce vendeur" : "Signaler cette annonce"}</h2>
+            <h2 id="report-modal-title">{reportTargetType === "USER" ? t("listing.reportThisSeller") : t("listing.reportThisListing")}</h2>
             <p className="offer-modal__listing-title">{listing.title}</p>
 
             {reportSuccess ? (
               <div className="checkout-success">
-                <strong>Signalement envoyé</strong>
-                <span>Merci, l'équipe de modération va l'examiner.</span>
+                <strong>{t("listing.reportSent")}</strong>
+                <span>{t("listing.reportThanks")}</span>
               </div>
             ) : (
               <form className="report-form" onSubmit={event => {
@@ -795,22 +794,22 @@ export default function ListingDetailPage() {
                 void submitReport();
               }}>
                 <label className="form-field">
-                  <span>Motif</span>
+                  <span>{t("listing.reportReason")}</span>
                   <select value={reportReason} onChange={event => setReportReason(event.target.value)}>
-                    <option value="FRAUD">Fraude ou arnaque</option>
-                    <option value="PROHIBITED_ITEM">Article interdit</option>
-                    <option value="MISLEADING">Information trompeuse</option>
-                    <option value="DUPLICATE">Annonce en double</option>
-                    <option value="OTHER">Autre</option>
+                    <option value="FRAUD">{t("listing.reportFraud")}</option>
+                    <option value="PROHIBITED_ITEM">{t("listing.reportProhibited")}</option>
+                    <option value="MISLEADING">{t("listing.reportMisleading")}</option>
+                    <option value="DUPLICATE">{t("listing.reportDuplicate")}</option>
+                    <option value="OTHER">{t("listing.reportOther")}</option>
                   </select>
                 </label>
 
                 <label className="form-field">
-                  <span>Détails</span>
+                  <span>{t("listing.reportDetails")}</span>
                   <textarea
                     value={reportDescription}
                     onChange={event => setReportDescription(event.target.value)}
-                    placeholder="Expliquez brièvement le problème"
+                    placeholder={t("listing.reportPlaceholder")}
                     maxLength={3000}
                   />
                 </label>
@@ -818,7 +817,7 @@ export default function ListingDetailPage() {
                 {reportError && <p className="form-error" role="alert">{reportError}</p>}
 
                 <button type="submit" className="primary-button" disabled={reportLoading}>
-                  {reportLoading ? "Envoi..." : "Envoyer le signalement"}
+                  {reportLoading ? t("listing.reportSending") : t("listing.reportSend")}
                 </button>
               </form>
             )}
@@ -854,13 +853,13 @@ export default function ListingDetailPage() {
               onClick={
                 handleCloseOfferModal
               }
-              aria-label="Fermer"
+              aria-label={t("listing.close")}
             >
               ×
             </button>
 
             <h2 id="offer-modal-title">
-              Faire une offre
+              {t("listing.makeOffer")}
             </h2>
 
             <p className="offer-modal__listing-title">
@@ -870,7 +869,7 @@ export default function ListingDetailPage() {
             {listing.price !== null && (
               <div className="offer-modal__price">
                 <span>
-                  Prix demandé
+                  {t("listing.askingPrice")}
                 </span>
 
                 <strong>
@@ -888,7 +887,7 @@ export default function ListingDetailPage() {
               htmlFor="offer-amount"
               className="offer-modal__label"
             >
-              Votre offre
+              {t("listing.yourOffer")}
             </label>
 
             <div className="offer-modal__input">
@@ -907,7 +906,7 @@ export default function ListingDetailPage() {
 
                   setOfferError(null);
                 }}
-                placeholder="Ex. 850000"
+                placeholder={t("listing.offerPlaceholder")}
               />
 
               <span>
@@ -917,11 +916,11 @@ export default function ListingDetailPage() {
 
             {offerPercentage !== null && (
               <p className="offer-modal__percentage">
-                Votre offre représente{" "}
+                {t("listing.offerRepresents")}{" "}
                 <strong>
                   {offerPercentage} %
                 </strong>{" "}
-                du prix demandé.
+                {t("listing.ofAskingPrice")}
               </p>
             )}
 
@@ -947,8 +946,8 @@ export default function ListingDetailPage() {
               }
             >
               {offerLoading
-                ? "Envoi de l'offre..."
-                : "Envoyer mon offre"}
+                ? t("listing.offerSending")
+                : t("listing.offerSend")}
             </button>
 
             <button
@@ -959,7 +958,7 @@ export default function ListingDetailPage() {
                 handleContinueWithoutOffer
               }
             >
-              Continuer sans offre
+              {t("listing.continueWithoutOffer")}
             </button>
           </div>
         </div>

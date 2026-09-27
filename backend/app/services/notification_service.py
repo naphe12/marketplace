@@ -34,7 +34,8 @@ class NotificationService:
                     user_id=user_id,
                     notification_type=notification_type.upper(),
                     title=title,
-                    message=message,                    
+                    message=message,
+                    data=data,
                     channel="IN_APP",
                     status="SENT",
                     sent_at=datetime.now(timezone.utc),
@@ -70,7 +71,8 @@ class NotificationService:
             ),
 
             title=title,
-            message=message,           
+            message=message,
+            data=data,
 
             channel="IN_APP",
 
