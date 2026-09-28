@@ -60,3 +60,12 @@ class Favorite(UUIDMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
+
+    folder_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "market.favorite_folders.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
+    )

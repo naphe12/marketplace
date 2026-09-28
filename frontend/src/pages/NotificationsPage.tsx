@@ -61,6 +61,10 @@ function notificationLink(notification: NotificationItem) {
     return `/listings/${data.listing_id}`;
   }
 
+  if (typeof data.wanted_request_id === "string") {
+    return "/wanted";
+  }
+
   if (typeof data.transaction_id === "string") {
     if (typeof data.conversation_id === "string") {
       return `/messages/${data.conversation_id}`;

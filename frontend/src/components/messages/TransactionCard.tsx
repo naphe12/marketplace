@@ -369,7 +369,7 @@ export default function TransactionCard({
                             <button
                                 key={value}
                                 type="button"
-                                className={value <= reviewRating ? "transaction-review-star transaction-review-star--active" : "transaction-review-star"}
+                                className={`transaction-review-star transaction-review-star--rating-${reviewRating} ${value <= reviewRating ? "transaction-review-star--active" : ""}`}
                                 onClick={() => setReviewRating(value)}
                                 aria-label={`${value} sur 5`}
                             >

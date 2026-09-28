@@ -33,6 +33,7 @@ import AppShell from "../components/layout/AppShell";
 import ConversationPage from "../pages/ConversationPage";
 import CountryHomePage from "../pages/CountryHomePage";
 import FavoritesPage from "../pages/FavoritesPage";
+import WantedPage from "../pages/WantedPage";
 import HomePage from "../pages/HomePage";
 import ListingCheckoutPage from "../pages/ListingCheckoutPage";
 import ListingDetailPage from "../pages/ListingDetailPage";
@@ -216,6 +217,10 @@ export const router =
         {
           path: "/favorites",
           element: <FavoritesPage />,
+        },
+        {
+          path: "/wanted",
+          element: <WantedPage />,
         },
         {
           path: "/notifications",

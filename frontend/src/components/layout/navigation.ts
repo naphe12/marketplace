@@ -1,4 +1,5 @@
 import {
+  Goal,
   Heart,
   Home,
   MessageCircle,
@@ -28,6 +29,11 @@ export const navigationItems: NavigationItem[] = [
     to: "/search",
     labelKey: "nav.search",
     icon: Search,
+  },
+  {
+    to: "/wanted",
+    labelKey: "nav.wanted",
+    icon: Goal,
   },
   {
     to: "/publish",

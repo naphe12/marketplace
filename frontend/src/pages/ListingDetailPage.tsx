@@ -8,10 +8,22 @@ import EditListingForm from "../components/listings/EditListingForm";
 import type { ListingDetail } from "../types/listing";
 import type { ReputationProfile, UserReview } from "../types/reputation";
 import ApproximateLocationMap from "../components/location/ApproximateLocationMap";
-import { Share2 } from "lucide-react";
+import { BadgeCheck, CircleAlert, Share2, Sparkles } from "lucide-react";
 
 // Ne présume pas que types/listing.ts comporte déjà ces champs :
 // l'API publique doit effectivement les renvoyer (centres de localité).
+type DealAssistant = {
+  verdict: string;
+  score: number;
+  price_position: string;
+  reference_price: string | null;
+  evaluated_price: string | null;
+  comparable_count: number;
+  trust_level: string | null;
+  fraud_risk: string;
+  reasons: string[];
+};
+
 type ListingWithLocation = ListingDetail & {
   latitude?: number | string | null;
   longitude?: number | string | null;
@@ -42,6 +54,7 @@ export default function ListingDetailPage() {
   const [attempt, setAttempt] = useState(0);
   const [sellerReputation, setSellerReputation] = useState<ReputationProfile | null>(null);
   const [sellerReviews, setSellerReviews] = useState<UserReview[]>([]);
+  const [dealAssistant, setDealAssistant] = useState<DealAssistant | null>(null);
 
   const [interestLoading, setInterestLoading] = useState(false);
 
@@ -76,6 +89,7 @@ export default function ListingDetailPage() {
     setListing(null);
     setSellerReputation(null);
     setSellerReviews([]);
+    setDealAssistant(null);
     setSelectedImage(null);
 
     setConversationId(null);
@@ -126,7 +140,7 @@ export default function ListingDetailPage() {
           .catch(() => undefined);
 
         void apiRequest<UserReview[]>(
-          `/transactions/users/${result.seller_id}/reviews`,
+          `/transactions/users//reviews`,
           {
             signal: controller.signal,
           },
@@ -137,6 +151,19 @@ export default function ListingDetailPage() {
             }
           })
           .catch(() => undefined);
+
+        if (user) {
+          void apiRequest<DealAssistant>(`/deal-assistant/listings/`, {
+            authenticated: true,
+            signal: controller.signal,
+          })
+            .then(assessment => {
+              if (!controller.signal.aborted) {
+                setDealAssistant(assessment);
+              }
+            })
+            .catch(() => undefined);
+        }
 
         setSelectedImage(
           result.images.find(image => image.is_primary)?.id ?? null,
@@ -621,6 +648,25 @@ export default function ListingDetailPage() {
                       </blockquote>
                     ))}
                   </div>
+                )}
+              </section>
+            )}
+
+            {dealAssistant && (
+              <section className={`deal-assistant-card deal-assistant-card--${dealAssistant.verdict.toLowerCase()}`}>
+                <div className="deal-assistant-card__heading">
+                  {dealAssistant.verdict === "GOOD_DEAL" ? <BadgeCheck size={20} /> : dealAssistant.verdict === "SUSPICIOUS" || dealAssistant.verdict === "RISKY" ? <CircleAlert size={20} /> : <Sparkles size={20} />}
+                  <div>
+                    <span>Deal Assistant</span>
+                    <strong>{dealAssistant.verdict === "GOOD_DEAL" ? "Bonne affaire" : dealAssistant.verdict === "FAIR" ? "Prix raisonnable" : dealAssistant.verdict === "SUSPICIOUS" ? "À vérifier" : "Prudence"}</strong>
+                  </div>
+                  <b>{dealAssistant.score}/100</b>
+                </div>
+                <p>Prix repère: {dealAssistant.reference_price ? `${dealAssistant.reference_price} ${listing.currency}` : "pas assez de comparables"} · {dealAssistant.comparable_count} comparable{dealAssistant.comparable_count > 1 ? "s" : ""}</p>
+                {dealAssistant.reasons.length > 0 && (
+                  <ul>
+                    {dealAssistant.reasons.slice(0, 3).map(reason => <li key={reason}>{reason}</li>)}
+                  </ul>
                 )}
               </section>
             )}
