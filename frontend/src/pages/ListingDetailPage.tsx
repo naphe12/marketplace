@@ -140,7 +140,7 @@ export default function ListingDetailPage() {
           .catch(() => undefined);
 
         void apiRequest<UserReview[]>(
-          `/transactions/users//reviews`,
+          `/transactions/users/${result.seller_id}/reviews`,
           {
             signal: controller.signal,
           },
@@ -152,8 +152,8 @@ export default function ListingDetailPage() {
           })
           .catch(() => undefined);
 
-        if (user) {
-          void apiRequest<DealAssistant>(`/deal-assistant/listings/`, {
+        if (user && !authLoading) {
+          void apiRequest<DealAssistant>(`/deal-assistant/listings/${result.id}`, {
             authenticated: true,
             signal: controller.signal,
           })
@@ -185,7 +185,7 @@ export default function ListingDetailPage() {
       });
 
     return () => controller.abort();
-  }, [listingId, attempt]);
+  }, [listingId, attempt, user, authLoading]);
 
   const images = [...(listing?.images ?? [])].sort(
     (a, b) => a.position - b.position,

@@ -237,7 +237,7 @@ export default function ListingCheckoutPage() {
 
 
   async function confirmTestPayment() {
-    if (!listingId || !payment) {
+    if (!listingId || !order) {
       return;
     }
 
@@ -245,8 +245,12 @@ export default function ListingCheckoutPage() {
     setError("");
 
     try {
+      const endpoint = payment
+        ? `/billing/payments/${payment.id}/simulate-success`
+        : `/billing/orders/${order.id}/simulate-payment`;
+
       const result = await apiRequest<SimulatedPaymentResult>(
-        `/billing/payments/${payment.id}/simulate-success`,
+        endpoint,
         {
           method: "POST",
           authenticated: true,
@@ -259,14 +263,13 @@ export default function ListingCheckoutPage() {
         result.status === "PAID"
       ) {
         setPayment(current => current ? { ...current, status: "SUCCESS" } : current);
+        setOrder(current => current ? { ...current, status: "PAID" } : current);
 
-        if (order) {
-          const loadedReceipt = await apiRequest<PaymentReceipt>(
-            `/billing/orders/${order.id}/receipt`,
-            { authenticated: true },
-          );
-          setReceipt(loadedReceipt);
-        }
+        const loadedReceipt = await apiRequest<PaymentReceipt>(
+          `/billing/orders/${order.id}/receipt`,
+          { authenticated: true },
+        );
+        setReceipt(loadedReceipt);
       }
     } catch (cause) {
       setError(
@@ -501,7 +504,7 @@ export default function ListingCheckoutPage() {
               <button
                 type="button"
                 className="primary-button inline-button"
-                disabled={!payment || paying || payment.status === "FAILED"}
+                disabled={!order || paying || payment?.status === "FAILED" || order.status === "PAID"}
                 onClick={() => void confirmTestPayment()}
               >
                 {paying && <Loader2 size={16} />}
