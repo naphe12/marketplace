@@ -55,6 +55,8 @@ export default function ListingDetailPage() {
   const [sellerReputation, setSellerReputation] = useState<ReputationProfile | null>(null);
   const [sellerReviews, setSellerReviews] = useState<UserReview[]>([]);
   const [dealAssistant, setDealAssistant] = useState<DealAssistant | null>(null);
+  const [dealAssistantLoading, setDealAssistantLoading] = useState(false);
+  const [dealAssistantError, setDealAssistantError] = useState<string | null>(null);
 
   const [interestLoading, setInterestLoading] = useState(false);
 
@@ -90,6 +92,8 @@ export default function ListingDetailPage() {
     setSellerReputation(null);
     setSellerReviews([]);
     setDealAssistant(null);
+    setDealAssistantLoading(false);
+    setDealAssistantError(null);
     setSelectedImage(null);
 
     setConversationId(null);
@@ -153,6 +157,9 @@ export default function ListingDetailPage() {
           .catch(() => undefined);
 
         if (user && !authLoading) {
+          setDealAssistantLoading(true);
+          setDealAssistantError(null);
+
           void apiRequest<DealAssistant>(`/deal-assistant/listings/${result.id}`, {
             authenticated: true,
             signal: controller.signal,
@@ -162,7 +169,16 @@ export default function ListingDetailPage() {
                 setDealAssistant(assessment);
               }
             })
-            .catch(() => undefined);
+            .catch(() => {
+              if (!controller.signal.aborted) {
+                setDealAssistantError(t("listing.dealAssistant.unavailable"));
+              }
+            })
+            .finally(() => {
+              if (!controller.signal.aborted) {
+                setDealAssistantLoading(false);
+              }
+            });
         }
 
         setSelectedImage(
@@ -185,7 +201,7 @@ export default function ListingDetailPage() {
       });
 
     return () => controller.abort();
-  }, [listingId, attempt, user, authLoading]);
+  }, [listingId, attempt, user, authLoading, t]);
 
   const images = [...(listing?.images ?? [])].sort(
     (a, b) => a.position - b.position,
@@ -203,9 +219,53 @@ export default function ListingDetailPage() {
     REFURBISHED: t("publish.conditionRefurbished"),
   };
 
+  function dealAssistantVerdictLabel(verdict: string) {
+    if (verdict === "GOOD_DEAL") return t("listing.dealAssistant.goodDeal");
+    if (verdict === "FAIR") return t("listing.dealAssistant.fair");
+    if (verdict === "SUSPICIOUS") return t("listing.dealAssistant.suspicious");
+    return t("listing.dealAssistant.risky");
+  }
+
+  function translateDealAssistantReason(reason: string) {
+    if (reason === "Prix très inférieur aux annonces similaires.") return t("listing.dealAssistant.reason.suspiciouslyLow");
+    if (reason === "Prix inférieur au marché comparable.") return t("listing.dealAssistant.reason.goodPrice");
+    if (reason === "Prix cohérent avec les annonces similaires.") return t("listing.dealAssistant.reason.fairPrice");
+    if (reason === "Prix au-dessus du marché comparable.") return t("listing.dealAssistant.reason.expensive");
+    if (reason === "Prix nettement supérieur aux annonces similaires.") return t("listing.dealAssistant.reason.veryExpensive");
+    if (reason === "Peu d'annonces comparables disponibles pour ce marché.") return t("listing.dealAssistant.reason.fewComparables");
+    if (reason === "Vendeur avec réputation solide.") return t("listing.dealAssistant.reason.solidReputation");
+    if (reason === "Vendeur encore peu établi sur la plateforme.") return t("listing.dealAssistant.reason.lowReputation");
+    if (reason === "Réputation vendeur non encore calculée.") return t("listing.dealAssistant.reason.noReputation");
+    if (reason === "Les contrôles de sécurité recommandent une prudence renforcée.") return t("listing.dealAssistant.reason.highRisk");
+    if (reason === "Les contrôles de sécurité recommandent quelques vérifications avant achat.") return t("listing.dealAssistant.reason.mediumRisk");
+    return reason;
+  }
+
   /*
    * 1. Création/récupération de la conversation
    */
+  async function reloadDealAssistant() {
+    if (!listing) {
+      return;
+    }
+
+    setDealAssistantLoading(true);
+    setDealAssistantError(null);
+
+    try {
+      const assessment = await apiRequest<DealAssistant>(
+        `/deal-assistant/listings/${listing.id}`,
+        { authenticated: true },
+      );
+      setDealAssistant(assessment);
+    } catch {
+      setDealAssistantError(t("listing.dealAssistant.unavailable"));
+    } finally {
+      setDealAssistantLoading(false);
+    }
+  }
+
+
   async function handleInterest() {
     if (!listing) {
       return;
@@ -652,21 +712,38 @@ export default function ListingDetailPage() {
               </section>
             )}
 
-            {dealAssistant && (
-              <section className={`deal-assistant-card deal-assistant-card--${dealAssistant.verdict.toLowerCase()}`}>
+            {(dealAssistant || (user && !authLoading)) && (
+              <section className={`deal-assistant-card ${dealAssistant ? `deal-assistant-card--${dealAssistant.verdict.toLowerCase()}` : ""}`}>
                 <div className="deal-assistant-card__heading">
-                  {dealAssistant.verdict === "GOOD_DEAL" ? <BadgeCheck size={20} /> : dealAssistant.verdict === "SUSPICIOUS" || dealAssistant.verdict === "RISKY" ? <CircleAlert size={20} /> : <Sparkles size={20} />}
+                  {dealAssistant?.verdict === "GOOD_DEAL" ? <BadgeCheck size={20} /> : dealAssistant?.verdict === "SUSPICIOUS" || dealAssistant?.verdict === "RISKY" ? <CircleAlert size={20} /> : <Sparkles size={20} />}
                   <div>
-                    <span>Deal Assistant</span>
-                    <strong>{dealAssistant.verdict === "GOOD_DEAL" ? "Bonne affaire" : dealAssistant.verdict === "FAIR" ? "Prix raisonnable" : dealAssistant.verdict === "SUSPICIOUS" ? "À vérifier" : "Prudence"}</strong>
+                    <span>{t("listing.dealAssistant.title")}</span>
+                    <strong>{dealAssistant ? dealAssistantVerdictLabel(dealAssistant.verdict) : dealAssistantLoading ? t("listing.dealAssistant.loading") : t("listing.dealAssistant.available")}</strong>
                   </div>
-                  <b>{dealAssistant.score}/100</b>
+                  {dealAssistant && <b>{dealAssistant.score}/100</b>}
                 </div>
-                <p>Prix repère: {dealAssistant.reference_price ? `${dealAssistant.reference_price} ${listing.currency}` : "pas assez de comparables"} · {dealAssistant.comparable_count} comparable{dealAssistant.comparable_count > 1 ? "s" : ""}</p>
-                {dealAssistant.reasons.length > 0 && (
-                  <ul>
-                    {dealAssistant.reasons.slice(0, 3).map(reason => <li key={reason}>{reason}</li>)}
-                  </ul>
+                {dealAssistant ? (
+                  <>
+                    <p>{t("listing.dealAssistant.referencePrice")} : {dealAssistant.reference_price ? `${dealAssistant.reference_price} ${listing.currency}` : t("listing.dealAssistant.noComparables")} · {dealAssistant.comparable_count} {dealAssistant.comparable_count > 1 ? t("listing.dealAssistant.comparables") : t("listing.dealAssistant.comparable")}</p>
+                    {dealAssistant.reasons.length > 0 && (
+                      <ul>
+                        {dealAssistant.reasons.slice(0, 3).map(reason => <li key={reason}>{translateDealAssistantReason(reason)}</li>)}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p>{dealAssistantError ?? t("listing.dealAssistant.prompt")}</p>
+                    <button
+                      type="button"
+                      className="secondary-button inline-button"
+                      disabled={dealAssistantLoading}
+                      onClick={() => void reloadDealAssistant()}
+                    >
+                      <Sparkles size={16} />
+                      {dealAssistantLoading ? t("listing.dealAssistant.analyzing") : t("listing.dealAssistant.analyze")}
+                    </button>
+                  </>
                 )}
               </section>
             )}
