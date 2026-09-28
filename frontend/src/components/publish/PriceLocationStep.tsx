@@ -1,8 +1,27 @@
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../api/client";
 import { useI18n } from "../../i18n/I18nProvider";
 import LocationPicker from "../location/LocationPicker";
 import LocationSelector from "./LocationSelector";
 
+type PricingEstimate = {
+  verdict: string;
+  confidence: string;
+  suggested_price: string | null;
+  low_price: string | null;
+  high_price: string | null;
+  median_price: string | null;
+  comparable_count: number;
+  currency: string;
+  message: string;
+  reasons: string[];
+};
+
 type Props = {
+  categoryId: string | null;
+  countryCode: string;
+  condition: string;
+  administrativeAreaId: string | null;
   price: string;
   currency: string;
   marketCurrency: string;
@@ -31,6 +50,7 @@ type Props = {
 };
 
 export default function PriceLocationStep({
+  categoryId, countryCode, condition, administrativeAreaId,
   price, currency, marketCurrency, priceType, allowOffers,
   provinceId, communeId, zoneId, localityId,
   latitude, longitude,
@@ -48,6 +68,90 @@ export default function PriceLocationStep({
 
   const defaultLatitude = hasLocation ? latitude : null;
   const defaultLongitude = hasLocation ? longitude : null;
+  const [pricingEstimate, setPricingEstimate] = useState<PricingEstimate | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState("");
+
+  useEffect(() => {
+    if (!categoryId || !price || Number(price) <= 0) {
+      setPricingEstimate(null);
+      setPricingError("");
+      setPricingLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      setPricingLoading(true);
+      setPricingError("");
+
+      void apiRequest<PricingEstimate>("/pricing/estimate", {
+        method: "POST",
+        authenticated: true,
+        signal: controller.signal,
+        body: JSON.stringify({
+          category_id: categoryId,
+          country_code: countryCode,
+          administrative_area_id: administrativeAreaId,
+          condition,
+          price,
+          currency,
+        }),
+      })
+        .then(result => {
+          if (!controller.signal.aborted) {
+            setPricingEstimate(result);
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setPricingEstimate(null);
+            setPricingError(t("publish.pricingUnavailable"));
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setPricingLoading(false);
+          }
+        });
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [administrativeAreaId, categoryId, condition, countryCode, currency, price, t]);
+
+  function pricingVerdictLabel(verdict: string) {
+    if (verdict === "TOO_LOW") return t("publish.pricingTooLow");
+    if (verdict === "FAST_SALE") return t("publish.pricingFastSale");
+    if (verdict === "FAIR") return t("publish.pricingFair");
+    if (verdict === "HIGH") return t("publish.pricingHigh");
+    if (verdict === "TOO_HIGH") return t("publish.pricingTooHigh");
+    return t("publish.pricingUnknown");
+  }
+
+  function pricingMessage(verdict: string) {
+    if (verdict === "TOO_LOW") return t("publish.pricingMessageTooLow");
+    if (verdict === "FAST_SALE") return t("publish.pricingMessageFastSale");
+    if (verdict === "FAIR") return t("publish.pricingMessageFair");
+    if (verdict === "HIGH") return t("publish.pricingMessageHigh");
+    if (verdict === "TOO_HIGH") return t("publish.pricingMessageTooHigh");
+    if (verdict === "NO_PRICE") return t("publish.pricingMessageNoPrice");
+    return t("publish.pricingMessageUnknown");
+  }
+
+  function pricingClassName(verdict: string | undefined) {
+    if (verdict === "FAST_SALE" || verdict === "FAIR") return "pricing-insight pricing-insight--good";
+    if (verdict === "HIGH") return "pricing-insight pricing-insight--warning";
+    if (verdict === "TOO_LOW" || verdict === "TOO_HIGH") return "pricing-insight pricing-insight--danger";
+    return "pricing-insight";
+  }
+
+  function formatPrice(value: string | null | undefined, valueCurrency: string) {
+    if (!value) return "-";
+    return `${Number(value).toLocaleString("fr-FR")} ${valueCurrency}`;
+  }
 
   return (
     <section className="publish-panel">
@@ -69,6 +173,44 @@ export default function PriceLocationStep({
           </select>
         </label>
       </div>
+
+      {(pricingEstimate || pricingLoading || pricingError) && (
+        <aside className={pricingClassName(pricingEstimate?.verdict)}>
+          <div className="pricing-insight__heading">
+            <span>{t("publish.pricingTitle")}</span>
+            <strong>
+              {pricingLoading
+                ? t("publish.pricingLoading")
+                : pricingEstimate
+                  ? pricingVerdictLabel(pricingEstimate.verdict)
+                  : t("publish.pricingUnavailable")}
+            </strong>
+          </div>
+
+          {pricingEstimate && (
+            <>
+              <p>{pricingMessage(pricingEstimate.verdict)}</p>
+              <p className="pricing-insight__note">{t("publish.pricingSuggestionOnly")}</p>
+              <dl>
+                <div>
+                  <dt>{t("publish.pricingSuggested")}</dt>
+                  <dd>{formatPrice(pricingEstimate.suggested_price, pricingEstimate.currency)}</dd>
+                </div>
+                <div>
+                  <dt>{t("publish.pricingRange")}</dt>
+                  <dd>{formatPrice(pricingEstimate.low_price, pricingEstimate.currency)} - {formatPrice(pricingEstimate.high_price, pricingEstimate.currency)}</dd>
+                </div>
+                <div>
+                  <dt>{t("publish.pricingComparables")}</dt>
+                  <dd>{pricingEstimate.comparable_count}</dd>
+                </div>
+              </dl>
+            </>
+          )}
+
+          {pricingError && <p>{pricingError}</p>}
+        </aside>
+      )}
 
       <div className="form-field">
         <span>{t("publish.priceType")}</span>

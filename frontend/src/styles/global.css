@@ -10116,3 +10116,78 @@ iframe {
   --deal-score-bg: #fee2e2;
   --deal-score-text: #991b1b;
 }
+
+.pricing-insight {
+  --pricing-accent: #64748b;
+  --pricing-border: #cbd5e1;
+  --pricing-bg: #f8fafc;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--pricing-border);
+  border-left-width: 5px;
+  border-radius: 10px;
+  background: var(--pricing-bg);
+}
+
+.pricing-insight--good {
+  --pricing-accent: #15803d;
+  --pricing-border: #22c55e;
+  --pricing-bg: #ecfdf3;
+}
+
+.pricing-insight--warning {
+  --pricing-accent: #b45309;
+  --pricing-border: #f59e0b;
+  --pricing-bg: #fffbeb;
+}
+
+.pricing-insight--danger {
+  --pricing-accent: #b91c1c;
+  --pricing-border: #ef4444;
+  --pricing-bg: #fef2f2;
+}
+
+.pricing-insight__heading {
+  display: grid;
+  gap: 2px;
+}
+
+.pricing-insight__heading span,
+.pricing-insight p,
+.pricing-insight dt {
+  color: var(--color-text-secondary);
+}
+
+.pricing-insight__heading strong,
+.pricing-insight dd {
+  color: var(--pricing-accent);
+}
+
+.pricing-insight dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.pricing-insight dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.pricing-insight dt,
+.pricing-insight dd,
+.pricing-insight p {
+  margin: 0;
+}
+
+.pricing-insight dd {
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .pricing-insight dl {
+    grid-template-columns: 1fr;
+  }
+}

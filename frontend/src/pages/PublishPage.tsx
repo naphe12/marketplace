@@ -1302,6 +1302,10 @@ function PublishEditor({
 
         {step === 4 && (
           <PriceLocationStep
+            categoryId={selectedCategory?.id ?? null}
+            countryCode={countryCode}
+            condition={condition}
+            administrativeAreaId={localityId || zoneId || communeId || provinceId || null}
             price={price}
             currency={currency}
             marketCurrency={marketCurrency}

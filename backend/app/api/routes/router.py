@@ -16,6 +16,7 @@ from app.api.routes.moderation import router as moderation_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.offers import router as offers_router
 from app.api.routes.publications import router as publications_router
+from app.api.routes.pricing import router as pricing_router
 from app.api.routes.reputation import router as reputation_router
 from app.api.routes.reviews import router as reviews_router
 from app.api.routes.saved_searches import router as saved_searches_router
@@ -33,6 +34,7 @@ api_router.include_router(admin_settings_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_notes_router)
 api_router.include_router(publications_router)
+api_router.include_router(pricing_router)
 api_router.include_router(billing_router)
 api_router.include_router(conversations_router)
 api_router.include_router(deal_assistant_router)
