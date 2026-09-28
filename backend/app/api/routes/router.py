@@ -7,6 +7,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.billing import router as billing_router
 from app.api.routes.categories import router as categories_router
 from app.api.routes.conversations import router as conversations_router
+from app.api.routes.deal_assistant import router as deal_assistant_router
 from app.api.routes.favorites import router as favorites_router
 from app.api.routes.images import router as images_router
 from app.api.routes.listings import router as listings_router
@@ -19,6 +20,7 @@ from app.api.routes.reputation import router as reputation_router
 from app.api.routes.reviews import router as reviews_router
 from app.api.routes.saved_searches import router as saved_searches_router
 from app.api.routes.transactions import router as transactions_router
+from app.api.routes.wanted import router as wanted_router
 from app.api.routes.verifications import router as verifications_router
 
 
@@ -33,6 +35,7 @@ api_router.include_router(admin_notes_router)
 api_router.include_router(publications_router)
 api_router.include_router(billing_router)
 api_router.include_router(conversations_router)
+api_router.include_router(deal_assistant_router)
 api_router.include_router(offers_router)
 api_router.include_router(transactions_router)
 api_router.include_router(reputation_router)
@@ -44,5 +47,6 @@ api_router.include_router(locations_router)
 api_router.include_router(reviews_router)
 api_router.include_router(images_router)
 api_router.include_router(saved_searches_router)
+api_router.include_router(wanted_router)
 
 

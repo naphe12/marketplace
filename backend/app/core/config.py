@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     SMS_SENDER_NAME: str = "Marketplace"
     PASSWORD_RESET_TOKEN_MINUTES: int = 15
 
+    EMBEDDINGS_ENABLED: bool = False
+    EMBEDDING_DIMENSIONS: int = 384
+
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 

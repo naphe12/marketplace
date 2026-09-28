@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.dependencies import get_current_user
 from app.core.database import get_db
@@ -52,6 +53,7 @@ from app.models.listing_metric import ListingView
 from app.services.listing_publication_service import (
     publish_listing as publish_listing_decision,
 )
+from app.services.embedding_service import EmbeddingService
 
 
 router = APIRouter(
@@ -358,10 +360,19 @@ async def publish_listing(
             detail="Annonce introuvable.",
         )
 
-    return await publish_listing_decision(
+    result = await publish_listing_decision(
         db=db,
         listing=listing,
     )
+    embedding_listing = await db.scalar(
+        select(Listing)
+        .options(selectinload(Listing.attribute_values))
+        .where(Listing.id == listing.id)
+    )
+    if embedding_listing:
+        await EmbeddingService.update_listing_embedding(db, embedding_listing)
+    await db.commit()
+    return result
 
 @router.get(
     "",
