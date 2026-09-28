@@ -34,7 +34,7 @@ export default function Sidebar() {
         </div>
 
         <div className="sidebar-brand-text">
-          <strong>MarketBI</strong>
+          <strong>Markatos</strong>
           <span>{t("sidebar.marketplace")}</span>
         </div>
       </div>

@@ -87,7 +87,7 @@ export default function Header() {
       <div className="mobile-brand">
         <Link to="/">
           <span className="brand-mark">M</span>
-          <span>MarketBI</span>
+          <span>Markatos</span>
         </Link>
       </div>
 
@@ -162,8 +162,8 @@ export default function Header() {
           <div className="profile-avatar">
             {user
               ? user.phone
-                  .replace("+257", "")
-                  .slice(0, 2)
+                .replace("+257", "")
+                .slice(0, 2)
               : "?"}
           </div>
 

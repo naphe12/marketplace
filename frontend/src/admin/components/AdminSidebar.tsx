@@ -17,7 +17,7 @@ export default function AdminSidebar() {
         <span>MB</span>
 
         <div>
-          <strong>MarketBI</strong>
+          <strong>Mercatus</strong>
           <small>Administration</small>
         </div>
       </NavLink>

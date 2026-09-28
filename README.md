@@ -13,7 +13,7 @@ Pour ouvrir plusieurs pays, gardez les variables globales comme fallback et ajou
 
 ```env
 PAYMENT_PROVIDER_BY_COUNTRY={"BI":{"provider":"LUMICASH","base_url":"https://pay-bi.example.com","api_key":"KEY","webhook_secret":"SECRET"},"RW":{"provider":"MTN_MOMO","base_url":"https://pay-rw.example.com","api_key":"KEY"}}
-SMS_PROVIDER_BY_COUNTRY={"BI":{"base_url":"https://sms-bi.example.com","api_key":"KEY","sender":"MarketBI"},"RW":{"base_url":"https://sms-rw.example.com","api_key":"KEY","sender":"MarketRW"}}
+SMS_PROVIDER_BY_COUNTRY={"BI":{"base_url":"https://sms-bi.example.com","api_key":"KEY","sender":"Markatos"},"RW":{"base_url":"https://sms-rw.example.com","api_key":"KEY","sender":"MarketRW"}}
 ```
 
 Le paiement utilise le pays de l'annonce liée à la commande, sinon le pays du compte utilisateur. Les SMS utilisent le pays du compte utilisateur.

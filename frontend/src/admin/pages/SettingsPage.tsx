@@ -27,15 +27,15 @@ export default function SettingsPage() {
       <div className="admin-page-heading">
         <div>
           <span>Publication</span>
-          <h1>Publication gratuite / payante</h1>
-          <p>Ces paramètres sont appliqués immédiatement par le backend au moment de publier.</p>
+          <h1>Publication gratuite par défaut</h1>
+          <p>Sans option payante activée, les annonces sont publiées gratuitement avec la durée ci-dessous.</p>
         </div>
       </div>
       {error && <p className="form-error">{error}</p>}
       {settings && (
         <div className="admin-panel admin-stack">
           <label className="admin-toggle-row">
-            <span>Publication payante</span>
+            <span>Exiger un package payant</span>
             <input type="checkbox" checked={settings.listing_payment_enabled} onChange={event => update({ listing_payment_enabled: event.target.checked })} />
           </label>
           <label className="admin-editor-grid">

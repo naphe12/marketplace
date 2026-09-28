@@ -21,7 +21,7 @@ type I18nContextValue = {
   t: (key: TranslationKey) => string;
 };
 
-const storageKey = "marketbi-language";
+const storageKey = "Markatos-language";
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
