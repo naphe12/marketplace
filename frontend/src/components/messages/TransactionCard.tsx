@@ -75,6 +75,12 @@ export default function TransactionCard({
     const [deliveryError, setDeliveryError] =
         useState("");
 
+    const [securePaymentLoading, setSecurePaymentLoading] =
+        useState(false);
+
+    const [securePaymentError, setSecurePaymentError] =
+        useState("");
+
     const isBuyer =
         transaction.buyer_id === currentUserId;
 
@@ -97,6 +103,55 @@ export default function TransactionCard({
         isBuyer
             ? buyerConfirmed
             : sellerConfirmed;
+
+
+    const securePayment = transaction.secure_payment;
+
+    function securePaymentStatusLabel(status: string) {
+        if (status === "PENDING_PAYMENT") return "Paiement à effectuer";
+        if (status === "HELD") return "Argent protégé";
+        if (status === "RELEASED") return "Libéré au vendeur";
+        if (status === "DISPUTED") return "Litige ouvert";
+        if (status === "REFUNDED") return "Remboursé";
+        return status;
+    }
+
+    async function securePaymentAction(action: "start" | "pay" | "release" | "dispute") {
+        setSecurePaymentLoading(true);
+        setSecurePaymentError("");
+
+        const body = action === "dispute"
+            ? JSON.stringify({
+                reason: window.prompt("Motif du litige ?") || "Litige paiement sécurisé",
+                description: window.prompt("Décrivez brièvement le problème") || null,
+            })
+            : undefined;
+
+        const endpoint = action === "start"
+            ? `/transactions/${transaction.id}/secure-payment`
+            : action === "pay"
+                ? `/transactions/${transaction.id}/secure-payment/simulate-pay`
+                : action === "release"
+                    ? `/transactions/${transaction.id}/secure-payment/release`
+                    : `/transactions/${transaction.id}/secure-payment/dispute`;
+
+        try {
+            await apiRequest(endpoint, {
+                method: "POST",
+                authenticated: true,
+                body,
+            });
+            onDeliveryChanged?.();
+        } catch (cause) {
+            setSecurePaymentError(
+                cause instanceof Error
+                    ? cause.message
+                    : "Action paiement sécurisé impossible.",
+            );
+        } finally {
+            setSecurePaymentLoading(false);
+        }
+    }
 
 
     async function createDelivery(event: FormEvent) {
@@ -271,6 +326,90 @@ export default function TransactionCard({
                                     : "Confirmer"}
                     </button>
                 )}
+
+
+            <section className={`secure-payment-card ${securePayment ? `secure-payment-card--${securePayment.status.toLowerCase()}` : ""}`}>
+                <div className="transaction-card__header">
+                    <div>
+                        <strong>Paiement sécurisé</strong>
+                        <p>L'argent est protégé jusqu'à confirmation de réception.</p>
+                    </div>
+                    {securePayment && (
+                        <span className={`transaction-card__status transaction-card__status--${securePayment.status.toLowerCase()}`}>
+                            {securePaymentStatusLabel(securePayment.status)}
+                        </span>
+                    )}
+                </div>
+
+                <div className="secure-payment-card__amount">
+                    {formatMoney(transaction.agreed_price, transaction.currency)}
+                </div>
+
+                {!securePayment && isBuyer && !cancelled && (
+                    <button
+                        type="button"
+                        className="primary-button inline-button"
+                        disabled={securePaymentLoading}
+                        onClick={() => void securePaymentAction("start")}
+                    >
+                        {securePaymentLoading ? "Activation..." : "Utiliser le paiement sécurisé"}
+                    </button>
+                )}
+
+                {securePayment?.status === "PENDING_PAYMENT" && isBuyer && (
+                    <button
+                        type="button"
+                        className="primary-button inline-button"
+                        disabled={securePaymentLoading}
+                        onClick={() => void securePaymentAction("pay")}
+                    >
+                        {securePaymentLoading ? "Paiement..." : "Payer en sécurisé"}
+                    </button>
+                )}
+
+                {securePayment?.status === "HELD" && (
+                    <div className="transaction-card__success">
+                        ✓ Paiement reçu. Le vendeur peut remettre ou livrer l'article.
+                    </div>
+                )}
+
+                {securePayment?.status === "HELD" && isBuyer && (
+                    <div className="meetup-response-actions">
+                        <button
+                            type="button"
+                            className="primary-button inline-button"
+                            disabled={securePaymentLoading}
+                            onClick={() => void securePaymentAction("release")}
+                        >
+                            Confirmer réception et libérer
+                        </button>
+                        <button
+                            type="button"
+                            className="secondary-button inline-button"
+                            disabled={securePaymentLoading}
+                            onClick={() => void securePaymentAction("dispute")}
+                        >
+                            Ouvrir un litige
+                        </button>
+                    </div>
+                )}
+
+                {securePayment?.status === "HELD" && isSeller && (
+                    <p className="transaction-card__waiting">
+                        En attente de confirmation de réception par l'acheteur.
+                    </p>
+                )}
+
+                {securePayment?.status === "DISPUTED" && (
+                    <p className="form-error">Litige ouvert. L'argent reste protégé jusqu'à résolution.</p>
+                )}
+
+                {securePayment?.status === "RELEASED" && (
+                    <div className="transaction-card__success">✓ Paiement libéré au vendeur.</div>
+                )}
+
+                {securePaymentError && <p className="form-error" role="alert">{securePaymentError}</p>}
+            </section>
 
 
             <section className="transaction-delivery">

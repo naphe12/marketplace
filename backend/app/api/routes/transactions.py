@@ -12,6 +12,11 @@ from app.schemas.review import (
     ReviewCreate,
     ReviewResponse,
 )
+from app.schemas.secure_payment import (
+    SecurePaymentResponse,
+    TransactionDisputeCreate,
+    TransactionDisputeResponse,
+)
 from app.schemas.transaction import (
     DeliveryCreateRequest,
     DeliveryDisputeRequest,
@@ -23,6 +28,7 @@ from app.schemas.transaction import (
 from app.services.transaction_service import (
     TransactionService,
 )
+from app.services.secure_payment_service import SecurePaymentService
 
 from datetime import (
     datetime,
@@ -75,7 +81,7 @@ async def my_transactions(
 ):
     result = await db.scalars(
         select(Transaction)
-        .options(selectinload(Transaction.delivery))
+        .options(selectinload(Transaction.delivery), selectinload(Transaction.secure_payment))
         .where(
             or_(
                 Transaction.buyer_id == current_user.id,
@@ -93,7 +99,7 @@ async def list_my_transactions(
 ):
     result = await db.scalars(
         select(Transaction)
-        .options(selectinload(Transaction.delivery))
+        .options(selectinload(Transaction.delivery), selectinload(Transaction.secure_payment))
         .where(
             or_(
                 Transaction.buyer_id == current_user.id,
@@ -235,6 +241,65 @@ async def cancel_transaction(
         "listing_status":
             listing.status if listing else None,
     }
+
+
+
+
+@router.post(
+    "/{transaction_id}/secure-payment",
+    response_model=SecurePaymentResponse,
+    status_code=201,
+)
+async def start_secure_payment(
+    transaction_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await SecurePaymentService.start(db, transaction_id, current_user.id)
+
+
+@router.post(
+    "/{transaction_id}/secure-payment/simulate-pay",
+    response_model=SecurePaymentResponse,
+)
+async def simulate_secure_payment(
+    transaction_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await SecurePaymentService.simulate_payment(db, transaction_id, current_user.id)
+
+
+@router.post(
+    "/{transaction_id}/secure-payment/release",
+    response_model=SecurePaymentResponse,
+)
+async def release_secure_payment(
+    transaction_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await SecurePaymentService.release(db, transaction_id, current_user.id)
+
+
+@router.post(
+    "/{transaction_id}/secure-payment/dispute",
+    response_model=TransactionDisputeResponse,
+    status_code=201,
+)
+async def dispute_secure_payment(
+    transaction_id: UUID,
+    data: TransactionDisputeCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await SecurePaymentService.dispute(
+        db,
+        transaction_id,
+        current_user.id,
+        data.reason,
+        data.description,
+    )
 
 
 @router.post(
@@ -421,7 +486,7 @@ async def get_user_transaction(
 ) -> Transaction:
     transaction = await db.scalar(
         select(Transaction)
-        .options(selectinload(Transaction.delivery))
+        .options(selectinload(Transaction.delivery), selectinload(Transaction.secure_payment))
         .where(
             Transaction.id == transaction_id,
             or_(

@@ -10191,3 +10191,49 @@ iframe {
     grid-template-columns: 1fr;
   }
 }
+
+.secure-payment-card {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #cbd5e1;
+  border-left: 5px solid #64748b;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.secure-payment-card--pending_payment {
+  border-color: #38bdf8;
+  border-left-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.secure-payment-card--held {
+  border-color: #22c55e;
+  border-left-color: #15803d;
+  background: #ecfdf3;
+}
+
+.secure-payment-card--released {
+  border-color: #86efac;
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.secure-payment-card--disputed {
+  border-color: #ef4444;
+  border-left-color: #b91c1c;
+  background: #fef2f2;
+}
+
+.secure-payment-card .transaction-card__header p,
+.secure-payment-card .transaction-card__waiting {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+}
+
+.secure-payment-card__amount {
+  font-size: 1.25rem;
+  font-weight: 900;
+}

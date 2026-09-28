@@ -1,3 +1,20 @@
+export type MarketplaceSecurePayment = {
+  id: string;
+  transaction_id: string;
+  buyer_id: string;
+  seller_id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  provider: string | null;
+  external_reference: string | null;
+  paid_at: string | null;
+  released_at: string | null;
+  refunded_at: string | null;
+  disputed_at: string | null;
+  created_at: string;
+};
+
 export type MarketplaceDelivery = {
   id: string;
   transaction_id: string;
@@ -40,6 +57,7 @@ export type MarketplaceTransaction = {
   completed_at: string | null;
   cancelled_at: string | null;
   delivery: MarketplaceDelivery | null;
+  secure_payment: MarketplaceSecurePayment | null;
 
   created_at: string;
 };

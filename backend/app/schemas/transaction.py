@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.secure_payment import SecurePaymentResponse
+
 
 class DeliveryResponse(BaseModel):
     id: UUID
@@ -68,6 +70,7 @@ class TransactionResponse(BaseModel):
     completed_at: datetime | None
     cancelled_at: datetime | None
     delivery: DeliveryResponse | None = None
+    secure_payment: SecurePaymentResponse | None = None
 
     created_at: datetime
 

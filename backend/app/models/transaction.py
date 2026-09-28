@@ -123,3 +123,9 @@ class Transaction(UUIDMixin, TimestampMixin, Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+
+    secure_payment: Mapped["SecurePayment | None"] = relationship(
+        back_populates="transaction",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
