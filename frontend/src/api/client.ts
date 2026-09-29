@@ -2,9 +2,39 @@ export const API_URL =
   import.meta.env.VITE_API_URL ??
   "http://127.0.0.1:8000/api/v1";
 
+import {
+  enqueueAction,
+  getCache,
+  putCache,
+} from "../offline/db";
+
+import {
+  syncQueuedActions,
+} from "../offline/sync";
+
 type ApiOptions = RequestInit & {
   authenticated?: boolean;
+  offlineQueue?: boolean;
+  cacheKey?: string;
 };
+
+export class QueuedActionError extends Error {
+  queuedId: string;
+
+  constructor(queuedId: string) {
+    super("Action enregistrée localement. Elle sera envoyée quand la connexion reviendra.");
+    this.name = "QueuedActionError";
+    this.queuedId = queuedId;
+  }
+}
+
+function isRead(method?: string) {
+  return !method || method.toUpperCase() === "GET";
+}
+
+function shouldQueue(error: unknown) {
+  return error instanceof TypeError || !navigator.onLine;
+}
 
 export async function apiRequest<T>(
   path: string,
@@ -12,6 +42,8 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const {
     authenticated = false,
+    offlineQueue = false,
+    cacheKey = path,
     headers,
     ...requestOptions
   } = options;
@@ -37,13 +69,40 @@ export async function apiRequest<T>(
     }
   }
 
-  const response = await fetch(
-    `${API_URL}${path}`,
-    {
-      ...requestOptions,
-      headers: requestHeaders,
-    },
-  );
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${API_URL}${path}`,
+      {
+        ...requestOptions,
+        headers: requestHeaders,
+      },
+    );
+  } catch (cause) {
+    if (isRead(requestOptions.method)) {
+      const cached = await getCache<T>(cacheKey);
+      if (cached) {
+        return cached.value;
+      }
+    }
+
+    if (offlineQueue && !isRead(requestOptions.method) && shouldQueue(cause)) {
+      const queued = await enqueueAction({
+        path,
+        method: requestOptions.method?.toUpperCase() ?? "GET",
+        headers: Array.from(requestHeaders.entries())
+          .filter(([key]) => key.toLowerCase() !== "authorization"),
+        body: typeof requestOptions.body === "string" ? requestOptions.body : null,
+        authenticated,
+      });
+
+      window.dispatchEvent(new CustomEvent("offline-action-queued", { detail: queued }));
+      throw new QueuedActionError(queued.id);
+    }
+
+    throw cause;
+  }
 
   if (!response.ok) {
     let message = `Une erreur est survenue (HTTP ${response.status}).`;
@@ -76,7 +135,15 @@ export async function apiRequest<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const data = await response.json() as T;
+
+  if (isRead(requestOptions.method)) {
+    void putCache(cacheKey, data);
+  } else {
+    void syncQueuedActions();
+  }
+
+  return data;
 }
 
 export async function downloadApiFile(

@@ -4,6 +4,7 @@ import {
   Heart,
   Plus,
   Search,
+  SignalLow,
 } from "lucide-react";
 
 import {
@@ -25,6 +26,7 @@ import {
 } from "../../auth/AuthContext";
 
 import LanguageSwitcher from "../../i18n/LanguageSwitcher";
+import { useLiteMode } from "../../offline/useLiteMode";
 import { useCountry } from "../../market/CountryContext";
 import {
   useI18n,
@@ -38,6 +40,7 @@ export default function Header() {
 
   const { t } = useI18n();
   const { countries, countryCode, setCountryCode } = useCountry();
+  const liteMode = useLiteMode();
 
   const [unreadNotifications, setUnreadNotifications] =
     useState(0);
@@ -148,6 +151,15 @@ export default function Header() {
             ))}
           </select>
         </label>
+
+        <span
+          className={liteMode ? "header-icon header-icon--active" : "header-icon"}
+          aria-label={liteMode ? "Mode Lite automatique actif" : "Réseau normal"}
+          title={liteMode ? "Mode Lite automatique actif" : "Réseau normal"}
+          role="status"
+        >
+          <SignalLow size={21} />
+        </span>
 
         <LanguageSwitcher />
 

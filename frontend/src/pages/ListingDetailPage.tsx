@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiRequest } from "../api/client";
+import { apiRequest, QueuedActionError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../i18n/I18nProvider";
 import PhotoUploader from "../components/publish/PhotoUploader";
@@ -346,6 +346,7 @@ export default function ListingDetailPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          offlineQueue: true,
           body: JSON.stringify({
             amount,
           }),
@@ -358,6 +359,14 @@ export default function ListingDetailPage() {
         `/messages/${conversationId}`,
       );
     } catch (cause) {
+      if (cause instanceof QueuedActionError) {
+        setOfferModalOpen(false);
+        navigate(
+          `/messages/${conversationId}`,
+        );
+        return;
+      }
+
       setOfferError(
         cause instanceof Error
           ? cause.message

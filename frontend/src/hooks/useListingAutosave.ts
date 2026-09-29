@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-import { apiRequest } from "../api/client";
+import { apiRequest, QueuedActionError } from "../api/client";
+import { saveListingDraft } from "../offline/db";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -45,26 +46,36 @@ export function useListingAutosave(
     setSaveState("saving");
 
     const timeout = window.setTimeout(async () => {
+      const payload = {
+        title: draft.title,
+        description: draft.description,
+        condition: draft.condition,
+        price: draft.price ? Number(draft.price) : null,
+        currency: draft.currency,
+        price_type: draft.price_type,
+        allow_offers: draft.allow_offers,
+        administrative_area_id: draft.administrative_area_id,
+        latitude: draft.latitude,
+        longitude: draft.longitude,
+      };
+
+      await saveListingDraft({
+        id: listingId,
+        listingId,
+        updatedAt: new Date().toISOString(),
+        data: payload,
+      });
+
       try {
         await apiRequest(`/listings/${listingId}`, {
           method: "PATCH",
           authenticated: true,
-          body: JSON.stringify({
-            title: draft.title,
-            description: draft.description,
-            condition: draft.condition,
-            price: draft.price ? Number(draft.price) : null,
-            currency: draft.currency,
-            price_type: draft.price_type,
-            allow_offers: draft.allow_offers,
-            administrative_area_id: draft.administrative_area_id,
-            latitude: draft.latitude,
-            longitude: draft.longitude,
-          }),
+          offlineQueue: true,
+          body: JSON.stringify(payload),
         });
         setSaveState("saved");
-      } catch {
-        setSaveState("error");
+      } catch (cause) {
+        setSaveState(cause instanceof QueuedActionError ? "saved" : "error");
       }
     }, 800);
 

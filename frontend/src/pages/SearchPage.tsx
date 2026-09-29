@@ -30,6 +30,7 @@ import {
   useI18n,
 } from "../i18n/I18nProvider";
 import { useCountry } from "../market/CountryContext";
+import { getLightPageSize, useConstrainedNetwork } from "../offline/network";
 
 import ListingCard from "../components/listings/ListingCard";
 import SearchResultsMap from "../components/location/SearchResultsMap";
@@ -51,7 +52,8 @@ import type {
 } from "../types/savedSearch";
 
 
-const PAGE_SIZE = 20;
+const NORMAL_PAGE_SIZE = 20;
+const LIGHT_PAGE_SIZE = 8;
 
 const sortOptions = [
   "newest",
@@ -154,6 +156,9 @@ export default function SearchPage() {
 
   const [viewMode, setViewMode] =
     useState<"list" | "map">("list");
+
+  const liteMode = useConstrainedNetwork();
+  const pageSize = getLightPageSize(NORMAL_PAGE_SIZE, LIGHT_PAGE_SIZE, liteMode);
 
   const [savedSearches, setSavedSearches] =
     useState<SavedSearch[]>([]);
@@ -276,7 +281,7 @@ export default function SearchPage() {
         radius_km: radiusKm,
         sort,
         offset: String(offset),
-        limit: String(PAGE_SIZE),
+        limit: String(pageSize),
       }),
     );
 
@@ -284,6 +289,7 @@ export default function SearchPage() {
       `/listings?${search}`,
       {
         signal: controller.signal,
+        cacheKey: `search:${search.toString()}`,
       },
     )
       .then(data => {
@@ -323,6 +329,7 @@ export default function SearchPage() {
     sort,
     offset,
     attempt,
+    pageSize,
   ]);
 
 
@@ -446,8 +453,7 @@ export default function SearchPage() {
 
 
   function changePage(nextOffset: number) {
-    setParams(
-      compactParams({
+    const nextParams = compactParams({
         q: query,
         category_id: categoryId,
         administrative_area_id: administrativeAreaId,
@@ -461,8 +467,9 @@ export default function SearchPage() {
         radius_km: radiusKm,
         sort,
         offset: String(nextOffset),
-      }),
-    );
+      });
+
+    setParams(nextParams);
   }
 
 
@@ -789,6 +796,7 @@ export default function SearchPage() {
               <button
                 type="button"
                 className={viewMode === "map" ? "search-view-toggle__item search-view-toggle__item--active" : "search-view-toggle__item"}
+                disabled={liteMode}
                 onClick={() => setViewMode("map")}
               >
                 <Map size={16} />
@@ -801,7 +809,7 @@ export default function SearchPage() {
             <p>{t("search.empty")}</p>
           )}
 
-          {viewMode === "map" ? (
+          {viewMode === "map" && !liteMode ? (
             <SearchResultsMap listings={results.items} />
           ) : (
             <div className="listing-grid">
@@ -816,7 +824,7 @@ export default function SearchPage() {
               <button
                 type="button"
                 disabled={offset === 0}
-                onClick={() => changePage(Math.max(0, offset - PAGE_SIZE))}
+                onClick={() => changePage(Math.max(0, offset - pageSize))}
               >
                 {t("search.previous")}
               </button>
@@ -824,7 +832,7 @@ export default function SearchPage() {
               <button
                 type="button"
                 disabled={!results.has_more}
-                onClick={() => changePage(offset + PAGE_SIZE)}
+                onClick={() => changePage(offset + pageSize)}
               >
                 {t("search.next")}
               </button>

@@ -1,0 +1,19 @@
+{
+  "name": "Marketplace",
+  "short_name": "Marketplace",
+  "description": "Marketplace offline-first pour annonces, offres et messages.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

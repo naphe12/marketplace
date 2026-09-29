@@ -12,6 +12,7 @@ import {
 
 import {
   apiRequest,
+  QueuedActionError,
 } from "../api/client";
 
 import MessageBubble from "../components/messages/MessageBubble";
@@ -273,6 +274,7 @@ export default function ConversationPage() {
             method: "POST",
             authenticated: true,
 
+            offlineQueue: true,
             body: JSON.stringify({
               body: body || null,
               attachment_url: attachment || null,
@@ -286,6 +288,22 @@ export default function ConversationPage() {
         message,
       ]);
     } catch (cause) {
+      if (cause instanceof QueuedActionError && user) {
+        setMessages(current => [
+          ...current,
+          {
+            id: cause.queuedId,
+            conversation_id: conversationId,
+            sender_id: user.id,
+            message_type: "TEXT",
+            content: body || attachment || "Message en attente d'envoi",
+            read_at: null,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        return;
+      }
+
       setText(body);
       setAttachmentUrl(attachment);
 

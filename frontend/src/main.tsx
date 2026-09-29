@@ -30,6 +30,19 @@ import "./styles/global.css";
 
 import "leaflet/dist/leaflet.css";
 
+import {
+  startOfflineSync,
+} from "./offline/sync";
+
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
+}
+
+startOfflineSync();
+
 
 createRoot(
   document.getElementById("root")!,

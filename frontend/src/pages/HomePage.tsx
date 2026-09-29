@@ -19,6 +19,7 @@ import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../i18n/I18nProvider";
 import { useCountry } from "../market/CountryContext";
+import { getLightPageSize, useConstrainedNetwork } from "../offline/network";
 
 import CategoryScroller from "../components/home/CategoryScroller";
 import ListingCard from "../components/listings/ListingCard";
@@ -33,6 +34,8 @@ import type {
 
 
 export default function HomePage() {
+  const liteMode = useConstrainedNetwork();
+  const listingLimit = getLightPageSize(12, 6, liteMode);
   const navigate = useNavigate();
 
   const { user } = useAuth();
@@ -68,7 +71,7 @@ export default function HomePage() {
           ),
 
           apiRequest<ListingSearchResponse>(
-            `/listings?limit=12&sort=newest&country_code=${countryCode}`,
+            (`/listings?limit=${listingLimit}&sort=newest&country_code=${countryCode}`),
           ),
         ] as const;
 

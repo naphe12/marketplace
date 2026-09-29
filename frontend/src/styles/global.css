@@ -10237,3 +10237,53 @@ iframe {
   font-size: 1.25rem;
   font-weight: 900;
 }
+
+
+.offline-status {
+  position: sticky;
+  top: 60px;
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #fff7ed;
+  border-bottom: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 14px;
+}
+
+.offline-status button {
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #9a3412;
+  padding: 4px 10px;
+}
+
+.header-icon--active {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.lite-mode *,
+.lite-mode *::before,
+.lite-mode *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+.lite-mode .leaflet-container,
+.lite-mode .search-map,
+.lite-mode .listing-detail__location {
+  display: none !important;
+}
+
+.lite-mode .listing-grid {
+  gap: 8px;
+}
+
+.lite-mode .listing-card__image img {
+  filter: saturate(0.9);
+}

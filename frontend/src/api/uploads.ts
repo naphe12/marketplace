@@ -2,6 +2,9 @@ import type { ListingImage } from "../types/listing";
 import {
   apiRequest,
 } from "./client";
+import {
+  compressImageForUpload,
+} from "../offline/images";
 
 
 type PrepareUploadResponse = {
@@ -17,6 +20,8 @@ export async function uploadListingImage(
   position: number,
   isPrimary: boolean,
 ) {
+  const uploadFile = await compressImageForUpload(file);
+
   const prepared =
     await apiRequest<PrepareUploadResponse>(
       `/listings/${listingId}/images/prepare`,
@@ -25,9 +30,9 @@ export async function uploadListingImage(
         authenticated: true,
 
         body: JSON.stringify({
-          filename: file.name,
-          content_type: file.type,
-          size_bytes: file.size,
+          filename: uploadFile.name,
+          content_type: uploadFile.type,
+          size_bytes: uploadFile.size,
         }),
       },
     );
@@ -41,10 +46,10 @@ export async function uploadListingImage(
 
         headers: {
           "Content-Type":
-            file.type,
+            uploadFile.type,
         },
 
-        body: file,
+        body: uploadFile,
       },
     );
 
@@ -67,10 +72,10 @@ export async function uploadListingImage(
           prepared.object_key,
 
         content_type:
-          file.type,
+          uploadFile.type,
 
         size_bytes:
-          file.size,
+          uploadFile.size,
 
         position,
 
